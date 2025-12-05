@@ -10,7 +10,7 @@ I wanted something that looked as good as the stock widgets on mobile phones—d
 
   * **Two Display Modes:**
       * **Single View:** Focus on one specific stock with a large price display, detailed chart, and company name.
-      * **Multi-Stock List:** A compact list of multiple stocks with "Sparkline" mini-charts to see trends at a glance.
+      * **Multi-Stock List:** A compact list of multiple stocks to see trends at a glance.
   * **Beautiful Charts:** Smooth, gradient-filled charts that change color (Green/Red) based on performance.
   * **Data Ranges:** View history from 1 Day (1D) all the way up to 5 Years (5Y) or Max.
   * **Smart & Efficient:**
