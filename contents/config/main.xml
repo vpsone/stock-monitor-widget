@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="ticker" type="String">
+            <label>Single Stock Ticker</label>
+            <default>AAPL</default>
+        </entry>
+        <entry name="isMultiMode" type="Bool">
+            <label>Enable Multi-Stock List Mode</label>
+            <default>false</default>
+        </entry>
+        <entry name="multiTickers" type="String">
+            <label>Comma separated list of tickers</label>
+            <default>AAPL, TSLA</default>
+        </entry>
+        <entry name="refreshInterval" type="Int">
+            <label>Refresh Interval (minutes)</label>
+            <default>5</default>
+        </entry>
+
+        <entry name="chartRange" type="String">
+            <label>Data History Range</label>
+            <default>1D</default>
+        </entry>
+
+        <entry name="limitHours" type="Bool">
+            <label>Only update during specific hours</label>
+            <default>false</default>
+        </entry>
+        <entry name="startHour" type="Int">
+            <default>9</default>
+        </entry>
+        <entry name="startMinute" type="Int">
+            <default>15</default>
+        </entry>
+        <entry name="endHour" type="Int">
+            <default>15</default>
+        </entry>
+        <entry name="endMinute" type="Int">
+            <default>30</default>
+        </entry>
+    </group>
+</kcfg>
