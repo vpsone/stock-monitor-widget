@@ -2,7 +2,7 @@
 
 This is a clean, modern stock market widget I built for KDE Plasma 6.
 
-I wanted something that looked as good as the stock widgets on mobile phones—dark mode, smooth gradients, and easy to read—but right on my Linux desktop. It pulls data directly from Yahoo Finance, so you get coverage for stocks and crypto from all over the world.
+I wanted something that looked as good as the stock widgets on mobile phones—dark mode, smooth gradients, and easy to read—but right on my Linux desktop. It pulls data directly from Yahoo Finance, so you get coverage for stocks, crypto, and currencies from all over the world.
 <p align="center">
     <a href="https://www.pling.com/p/2332661/">
         <img src="https://img.shields.io/badge/KDE_Store-Download-blue?style=for-the-badge&logo=kde" alt="KDE Store Collection">
