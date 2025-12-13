@@ -40,6 +40,9 @@ PlasmoidItem {
     ListModel { id: stockModel }
 
     function getCurrencySymbol(code) {
+        // Fix: Return empty string if code is missing or literal "null"
+        if (!code || code === "null") return "";
+
         const symbols = {
             "USD": "$", "EUR": "€", "GBP": "£", "INR": "₹", "JPY": "¥",
             "CNY": "¥", "KRW": "₩", "RUB": "₽"
@@ -271,6 +274,10 @@ PlasmoidItem {
                                     font.pixelSize: 15
                                     font.family: "Arial"
                                     Layout.alignment: Qt.AlignVCenter
+                                    // Add this to prevent it from being too long
+                                    elide: Text.ElideRight
+                                    // Layout.maximumWidth: 120
+                                    Layout.fillWidth: true
                                 }
                             }
                             Text {
@@ -278,7 +285,8 @@ PlasmoidItem {
                                 color: "#888888"
                                 font.pixelSize: 10
                                 elide: Text.ElideRight
-                                Layout.maximumWidth: 120
+                                Layout.fillWidth: true
+                                // Layout.maximumWidth: 120
                             }
                         }
                         Item { Layout.fillWidth: true }
