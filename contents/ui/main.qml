@@ -9,7 +9,11 @@ PlasmoidItem {
 
     // --- CONFIGURATION ---
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
-    preferredRepresentation: fullRepresentation
+    // Detect where we are (Panel vs Desktop) to switch views
+    preferredRepresentation: (Plasmoid.formFactor === PlasmaCore.Types.Horizontal || Plasmoid.formFactor === PlasmaCore.Types.Vertical)
+    ? Plasmoid.CompactRepresentation
+    : Plasmoid.FullRepresentation
+
 
     property string singleTicker: Plasmoid.configuration.ticker
     property bool isMultiMode: Plasmoid.configuration.isMultiMode
@@ -218,6 +222,49 @@ PlasmoidItem {
         // CHANGED: Call checkTimeAndRefresh instead of refreshData directly
         onTriggered: root.checkTimeAndRefresh()
     }
+
+    // --- PANEL VIEW (Compact Representation) ---
+    compactRepresentation: MouseArea {
+        id: compactRoot
+        Layout.minimumWidth: panelLayout.implicitWidth
+        Layout.minimumHeight: panelLayout.implicitHeight
+
+        onClicked: Plasmoid.expanded = !Plasmoid.expanded
+
+        RowLayout {
+            id: panelLayout
+            anchors.fill: parent
+            spacing: 4 // Space between Icon and the Text Stack
+
+            // Stacked Text Column
+            ColumnLayout {
+                Layout.alignment: Qt.AlignVCenter
+                spacing: -1 // Negative spacing keeps them tight together in the panel
+
+                // 1. Top: Ticker Name (Small)
+                Text {
+                    text: root.singleTicker
+                    color: PlasmaCore.Theme.textColor
+                    font.pixelSize: 8   // Small font
+                    opacity: 0.8        // Slightly dimmed
+                    visible: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
+                    Layout.alignment: Qt.AlignLeft
+                }
+
+                // 2. Bottom: Current Price (Colored)
+                Text {
+                    text: root.currentPrice
+                    color: root.isPositive ? root.positiveColor : root.negativeColor
+                    // font.bold: true
+                    font.pixelSize: 12
+                    visible: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
+                    Layout.alignment: Qt.AlignLeft
+                }
+            }
+        }
+    }
+
+    // --- DESKTOP VIEW (Full Representation) ---
 
     fullRepresentation: Item {
         Layout.minimumWidth: 190
