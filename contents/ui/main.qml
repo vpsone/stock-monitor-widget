@@ -325,7 +325,7 @@ PlasmoidItem {
                     spacing: 4
                     Text {
                         text: root.singleTicker.toUpperCase()
-                        color: PlasmaCore.Theme.textColor
+                        color:  Kirigami.Theme.textColor
                         font.pixelSize: 9
                         font.weight: Font.Bold
                         opacity: 0.6
