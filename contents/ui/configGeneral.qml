@@ -91,11 +91,15 @@ Item {
         return str;
     }
 
-    Kirigami.FormLayout {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
+    ScrollView {
+        id: scrollView
+        anchors.fill: parent
         anchors.margins: 20
+        contentWidth: availableWidth
+        clip: true
+
+        Kirigami.FormLayout {
+            width: scrollView.availableWidth
 
         CheckBox {
             id: modeSwitch
@@ -333,5 +337,6 @@ Item {
             repeat: false
             onTriggered: configPage.searchSymbols(searchField.text)
         }
+    }
     }
 }
