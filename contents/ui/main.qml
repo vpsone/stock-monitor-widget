@@ -191,6 +191,23 @@ PlasmoidItem {
                     }
                 }
             }
+
+            // Fallback: if market hasn't opened yet today resulting in empty cleanData for 1D chart,
+            // extract the most recent trading day available from the queried 2d range.
+            if (root.chartRange === "1D" && cleanData.length === 0 && timestamps && timestamps.length > 0) {
+                var dayStartIndex = 0;
+                for (var j = timestamps.length - 1; j > 0; j--) {
+                    if (timestamps[j] - timestamps[j-1] > 4 * 3600) { // 4 hours gap
+                        dayStartIndex = j;
+                        break;
+                    }
+                }
+                for (var k = dayStartIndex; k < quotes.length; k++) {
+                    if (quotes[k] !== null) {
+                        cleanData.push(quotes[k]);
+                    }
+                }
+            }
             root.chartDataPoints = cleanData;
             var now = new Date();
             root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
@@ -225,6 +242,23 @@ PlasmoidItem {
                         }
                     } else {
                         cleanData.push(quotes[i]);
+                    }
+                }
+            }
+
+            // Fallback: if market hasn't opened yet today resulting in empty cleanData for 1D chart,
+            // extract the most recent trading day available from the queried 2d range.
+            if (root.chartRange === "1D" && cleanData.length === 0 && timestamps && timestamps.length > 0) {
+                var dayStartIndex = 0;
+                for (var j = timestamps.length - 1; j > 0; j--) {
+                    if (timestamps[j] - timestamps[j-1] > 4 * 3600) {
+                        dayStartIndex = j;
+                        break;
+                    }
+                }
+                for (var k = dayStartIndex; k < quotes.length; k++) {
+                    if (quotes[k] !== null) {
+                        cleanData.push(quotes[k]);
                     }
                 }
             }
