@@ -84,7 +84,8 @@ PlasmoidItem {
     function refreshData() {
         if (root.isMultiMode) {
             fetchMultiStocks();
-        } else {
+        } 
+        if (root.singleTicker.trim() !== "") {
             fetchSingleStock(root.singleTicker);
         }
     }
@@ -458,7 +459,7 @@ PlasmoidItem {
                         } else {
                             console.log("Opening URL: " + root.singleTicker);
                             Qt.openUrlExternally("https://finance.yahoo.com/quote/" + root.singleTicker);
-                        }
+                        }   
                     }
 
                     Timer {
@@ -578,15 +579,19 @@ PlasmoidItem {
                         anchors.fill: parent
                         z: 100 // Above the row layout
                         cursorShape: Qt.PointingHandCursor
-                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
                         onClicked: (mouse) => {
                             if (mouse.button === Qt.MiddleButton) {
                                 parent.opacity = 0.4;
                                 root.refreshData();
                                 timerListFlicker.restart();
-                            } else {
+                            } else if (mouse.button === Qt.LeftButton) {
                                 console.log("Opening URL: " + model.ticker);
                                 Qt.openUrlExternally("https://finance.yahoo.com/quote/" + model.ticker);
+                            } else {
+                                singleTicker = model.ticker; // Set singleTicker to the clicked item
+                                root.setSingleTicker(singleTicker);
+                                root.refreshData();
                             }
                         }
                         Timer {
