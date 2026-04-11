@@ -55,6 +55,10 @@
             <label>Negative Change Color</label>
             <default>#FF3B30</default>
         </entry>
+        <entry name="bgOpacity" type="Int">
+            <label>Background Opacity Base (Percent)</label>
+            <default>100</default>
+        </entry>
         <entry name="hideChangePercentage" type="Bool">
             <label>Hide Stock Change Percentage (Panel View)</label>
             <default>false</default>

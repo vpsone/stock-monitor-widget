@@ -8,6 +8,7 @@ Item {
 
     property alias cfg_positiveColor: posColorButton.text
     property alias cfg_negativeColor: negColorButton.text
+    property alias cfg_bgOpacity: opacitySpin.value
 
     ScrollView {
         anchors.fill: parent
@@ -28,6 +29,13 @@ Item {
                 id: negColorButton
                 Kirigami.FormData.label: "Negative Color (Hex):"
                 placeholderText: "#ff3b30"
+            }
+
+            SpinBox {
+                id: opacitySpin
+                Kirigami.FormData.label: "Background Opacity (%):"
+                from: 0
+                to: 100
             }
         }
     }

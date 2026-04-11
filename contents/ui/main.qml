@@ -22,6 +22,8 @@ PlasmoidItem {
 
     property string singleTicker: Plasmoid.configuration.ticker
     property bool isMultiMode: Plasmoid.configuration.isMultiMode
+    property string panelTicker: ""
+    property string manualPanelTickerOverride: ""
     property string multiTickers: Plasmoid.configuration.multiTickers
     property bool sortAlphabetically: Plasmoid.configuration.sortAlphabetically
     property string chartRange: Plasmoid.configuration.chartRange
@@ -46,6 +48,7 @@ PlasmoidItem {
 
     property color positiveColor: Plasmoid.configuration.positiveColor
     property color negativeColor: Plasmoid.configuration.negativeColor
+    property int bgOpacity: Plasmoid.configuration.bgOpacity
     property bool hideChangePercentage: Plasmoid.configuration.hideChangePercentage
     property bool hideTimestamps: Plasmoid.configuration.hideTimestamps
     property string lastUpdated: ""
@@ -86,7 +89,7 @@ PlasmoidItem {
         if (root.isMultiMode) {
             fetchMultiStocks();
         } 
-        if (root.singleTicker.trim() !== "") {
+        else {
             fetchSingleStock(root.singleTicker);
         }
     }
@@ -149,6 +152,9 @@ PlasmoidItem {
                 return a.localeCompare(b);
             });
         }
+        
+        var defaultPanelTicker = targetTickers.length > 0 ? targetTickers[0] : "";
+        root.panelTicker = root.manualPanelTickerOverride !== "" && targetTickers.indexOf(root.manualPanelTickerOverride) !== -1 ? root.manualPanelTickerOverride : defaultPanelTicker;
 
         // Initialize placeholders to maintain display order before async completion
         if (stockModel.count !== targetTickers.length) {
@@ -181,14 +187,14 @@ PlasmoidItem {
         });
     }
 
-    function processSingleData(json) {
+    function processSingleData(json, fallbackSymbol) {
         try {
             var result = json.chart.result[0];
             var meta = result.meta;
             var quotes = result.indicators.quote[0].close;
             var timestamps = result.timestamp;
 
-            root.singleCompanyName = meta.shortName || meta.longName || root.singleTicker;
+            root.singleCompanyName = meta.shortName || meta.longName || (fallbackSymbol || root.singleTicker);
             // previousClose priority: regularMarketPreviousClose is the canonical
             // "yesterday's close" from Yahoo Finance metadata. When using 2d range
             // (needed for intraday baseline), chartPreviousClose may return the close
@@ -245,6 +251,9 @@ PlasmoidItem {
     }
 
     function processListRow(symbol, json) {
+        if (root.isMultiMode && symbol === root.panelTicker) {
+            processSingleData(json, symbol);
+        }
         try {
             var result = json.chart.result[0];
             var meta = result.meta;
@@ -327,7 +336,17 @@ PlasmoidItem {
     }
 
     onSingleTickerChanged: refreshData()
-    onIsMultiModeChanged: { stockModel.clear(); refreshData(); }
+    onIsMultiModeChanged: {
+        stockModel.clear();
+        if (!isMultiMode) {
+            root.singleCompanyName = "Loading...";
+            root.currentPrice = "---";
+            root.priceChange = "";
+            root.percentChange = "";
+            root.chartDataPoints = [];
+        }
+        refreshData();
+    }
     onMultiTickersChanged: { stockModel.clear(); refreshData(); }
     onSortAlphabeticallyChanged: { stockModel.clear(); refreshData(); }
     // CHANGED: Update when range changes
@@ -387,7 +406,7 @@ PlasmoidItem {
                 RowLayout {
                     spacing: 4
                     Text {
-                        text: root.singleTicker.toUpperCase()
+                        text: (root.isMultiMode ? root.panelTicker : root.singleTicker).toUpperCase()
                         color:  Kirigami.Theme.textColor
                         font.pixelSize: 9
                         font.weight: Font.Bold
@@ -450,12 +469,16 @@ PlasmoidItem {
         // Layout.preferredWidth: 260
         // Layout.preferredHeight: 300
 
-        Rectangle {
+        Item {
             anchors.fill: parent
-            color: root.bgColor
             anchors.margins: 10
-            radius: 22
-            opacity: 1
+
+            Rectangle {
+                anchors.fill: parent
+                color: root.bgColor
+                radius: 22
+                opacity: root.bgOpacity / 100.0
+            }
 
             Text {
                 anchors.centerIn: parent
@@ -567,6 +590,7 @@ PlasmoidItem {
                         Canvas {
                             id: singleCanvas
                             anchors.fill: parent
+                            visible: root.chartDataPoints && root.chartDataPoints.length > 0
                             renderStrategy: Canvas.Threaded
                             renderTarget: Canvas.Image
                             onPaint: { drawChart(getContext("2d"), width, height, root.chartDataPoints, root.previousClose, root.isPositive, true); }
@@ -616,9 +640,8 @@ PlasmoidItem {
                             } else if (mouse.button === Qt.LeftButton) {
                                 console.log("Opening URL: " + model.ticker);
                                 Qt.openUrlExternally("https://finance.yahoo.com/quote/" + model.ticker);
-                            } else {
-                                singleTicker = model.ticker; // Set singleTicker to the clicked item
-                                root.setSingleTicker(singleTicker);
+                            } else if (mouse.button === Qt.RightButton) {
+                                root.manualPanelTickerOverride = model.ticker;
                                 root.refreshData();
                             }
                         }
