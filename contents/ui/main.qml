@@ -26,6 +26,7 @@ PlasmoidItem {
     property string manualPanelTickerOverride: ""
     property string multiTickers: Plasmoid.configuration.multiTickers
     property bool sortAlphabetically: Plasmoid.configuration.sortAlphabetically
+    property bool swapNameAndTicker: Plasmoid.configuration.swapNameAndTicker
     property string chartRange: Plasmoid.configuration.chartRange
 
     // Time Limits Config
@@ -538,7 +539,7 @@ PlasmoidItem {
                                     Layout.alignment: Qt.AlignVCenter
                                 }
                                 Text {
-                                    text: root.singleTicker
+                                    text: root.swapNameAndTicker ? root.singleCompanyName : root.singleTicker
                                     color: "white"
                                     font.bold: true
                                     font.pixelSize: 15
@@ -549,7 +550,7 @@ PlasmoidItem {
                                 }
                             }
                             Text {
-                                text: root.singleCompanyName
+                                text: root.swapNameAndTicker ? root.singleTicker : root.singleCompanyName
                                 color: "#888888"
                                 font.pixelSize: 10
                                 elide: Text.ElideRight
@@ -667,14 +668,14 @@ PlasmoidItem {
                                     font.pixelSize: 10
                                 }
                                 Text {
-                                    text: model.ticker
+                                    text: root.swapNameAndTicker ? model.name : model.ticker
                                     color: "white"
                                     // font.bold: true
                                     font.pixelSize: 14
                                 }
                             }
                             Text {
-                                text: model.name
+                                text: root.swapNameAndTicker ? model.ticker : model.name
                                 color: "#888888"
                                 font.pixelSize: 10
                                 elide: Text.ElideRight

@@ -11,6 +11,7 @@ Item {
     property alias cfg_isMultiMode: modeSwitch.checked
     property alias cfg_multiTickers: multiListField.text
     property alias cfg_sortAlphabetically: sortSwitch.checked
+    property alias cfg_swapNameAndTicker: swapNameSwitch.checked
     
     property alias cfg_limitHours: limitHoursSwitch.checked
     property alias cfg_hideTimestamps: hideTimestampsSwitch.checked
@@ -62,6 +63,12 @@ Item {
                 visible: modeSwitch.checked
                 Kirigami.FormData.label: "Sorting:"
                 text: "Sort stocks alphabetically"
+            }
+
+            CheckBox {
+                id: swapNameSwitch
+                Kirigami.FormData.label: "Swap Names:"
+                text: "Swap company name and ticker symbol"
             }
 
             ComboBox {
