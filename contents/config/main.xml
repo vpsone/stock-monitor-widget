@@ -17,6 +17,10 @@
             <label>Comma separated list of tickers</label>
             <default>AAPL, TSLA</default>
         </entry>
+        <entry name="sortAlphabetically" type="Bool">
+            <label>Sort Multi-Stock List Alphabetically</label>
+            <default>false</default>
+        </entry>
         <entry name="refreshInterval" type="Int">
             <label>Refresh Interval (minutes)</label>
             <default>5</default>

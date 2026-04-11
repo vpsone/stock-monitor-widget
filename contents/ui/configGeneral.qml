@@ -10,6 +10,7 @@ Item {
     property alias cfg_refreshInterval: intervalSpin.value
     property alias cfg_isMultiMode: modeSwitch.checked
     property alias cfg_multiTickers: multiListField.text
+    property alias cfg_sortAlphabetically: sortSwitch.checked
     
     property alias cfg_limitHours: limitHoursSwitch.checked
     property alias cfg_hideTimestamps: hideTimestampsSwitch.checked
@@ -54,6 +55,13 @@ Item {
                 placeholderText: "AAPL, TSLA"
                 Layout.fillWidth: true
                 Layout.minimumHeight: 60
+            }
+
+            CheckBox {
+                id: sortSwitch
+                visible: modeSwitch.checked
+                Kirigami.FormData.label: "Sorting:"
+                text: "Sort stocks alphabetically"
             }
 
             ComboBox {

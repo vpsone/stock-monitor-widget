@@ -23,6 +23,7 @@ PlasmoidItem {
     property string singleTicker: Plasmoid.configuration.ticker
     property bool isMultiMode: Plasmoid.configuration.isMultiMode
     property string multiTickers: Plasmoid.configuration.multiTickers
+    property bool sortAlphabetically: Plasmoid.configuration.sortAlphabetically
     property string chartRange: Plasmoid.configuration.chartRange
 
     // Time Limits Config
@@ -137,10 +138,36 @@ PlasmoidItem {
 
     function fetchMultiStocks() {
         var tickers = root.multiTickers.split(",");
-        tickers.forEach(function(tickerSymbol) {
-            var cleanSymbol = tickerSymbol.trim();
-            if(cleanSymbol === "") return;
+        var targetTickers = [];
+        tickers.forEach(function(t) {
+            var clean = t.trim();
+            if (clean !== "") targetTickers.push(clean);
+        });
 
+        if (root.sortAlphabetically) {
+            targetTickers.sort(function(a, b) {
+                return a.localeCompare(b);
+            });
+        }
+
+        // Initialize placeholders to maintain display order before async completion
+        if (stockModel.count !== targetTickers.length) {
+            stockModel.clear();
+            targetTickers.forEach(function(cleanSymbol) {
+                stockModel.append({
+                    "ticker": cleanSymbol,
+                    "name": "Loading...",
+                    "price": "---",
+                    "change": "",
+                    "pct": "",
+                    "isPos": true,
+                    "chartPoints": [],
+                    "prevClose": 0.0
+                });
+            });
+        }
+
+        targetTickers.forEach(function(cleanSymbol) {
             var xhr = new XMLHttpRequest();
             var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + cleanSymbol + "?" + getApiParams();
             xhr.onreadystatechange = function() {
@@ -302,6 +329,7 @@ PlasmoidItem {
     onSingleTickerChanged: refreshData()
     onIsMultiModeChanged: { stockModel.clear(); refreshData(); }
     onMultiTickersChanged: { stockModel.clear(); refreshData(); }
+    onSortAlphabeticallyChanged: { stockModel.clear(); refreshData(); }
     // CHANGED: Update when range changes
     onChartRangeChanged: { stockModel.clear(); refreshData(); }
 
