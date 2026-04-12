@@ -196,27 +196,15 @@ PlasmoidItem {
             var timestamps = result.timestamp;
 
             root.singleCompanyName = meta.shortName || meta.longName || (fallbackSymbol || root.singleTicker);
-            // previousClose priority: regularMarketPreviousClose is the canonical
-            // "yesterday's close" from Yahoo Finance metadata. When using 2d range
-            // (needed for intraday baseline), chartPreviousClose may return the close
-            // from 2 days ago rather than yesterday, so we use it only as a last resort.
-            root.previousClose = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
-            
             root.currencySym = getCurrencySymbol(meta.currency);
-            root.currentPrice = root.currencySym + meta.regularMarketPrice.toFixed(2);
             root.currentRawPrice = meta.regularMarketPrice;
-
-            var change = meta.regularMarketPrice - root.previousClose;
-            root.isPositive = change >= 0;
-            root.priceChange = (change > 0 ? "+" : "") + change.toFixed(2);
-            root.percentChange = (change > 0 ? "+" : "") + ((change / root.previousClose) * 100).toFixed(2) + "%";
+            root.currentPrice = root.currencySym + meta.regularMarketPrice.toFixed(2);
 
             var cleanData = [];
             var startTime = (meta.currentTradingPeriod && meta.currentTradingPeriod.regular) ? meta.currentTradingPeriod.regular.start : 0;
             
             for (var i = 0; i < quotes.length; i++) {
                 if (quotes[i] !== null) {
-                    // Only show today's data if in 1D mode (2d range used for baseline)
                     if (root.chartRange === "1D" && startTime > 0) {
                         if (timestamps[i] >= startTime) {
                             cleanData.push(quotes[i]);
@@ -227,12 +215,10 @@ PlasmoidItem {
                 }
             }
 
-            // Fallback: if market hasn't opened yet today resulting in empty cleanData for 1D chart,
-            // extract the most recent trading day available from the queried 2d range.
             if (root.chartRange === "1D" && cleanData.length === 0 && timestamps && timestamps.length > 0) {
                 var dayStartIndex = 0;
                 for (var j = timestamps.length - 1; j > 0; j--) {
-                    if (timestamps[j] - timestamps[j-1] > 4 * 3600) { // 4 hours gap
+                    if (timestamps[j] - timestamps[j-1] > 4 * 3600) { 
                         dayStartIndex = j;
                         break;
                     }
@@ -244,6 +230,21 @@ PlasmoidItem {
                 }
             }
             root.chartDataPoints = cleanData;
+
+            if (root.chartRange === "1D") {
+                root.previousClose = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
+            } else {
+                root.previousClose = meta.chartPreviousClose;
+                if (!root.previousClose || root.previousClose === 0) {
+                    root.previousClose = cleanData.length > 0 ? cleanData[0] : meta.regularMarketPreviousClose;
+                }
+            }
+
+            var change = meta.regularMarketPrice - root.previousClose;
+            root.isPositive = change >= 0;
+            root.priceChange = (change > 0 ? "+" : "") + change.toFixed(2);
+            root.percentChange = (change > 0 ? "+" : "") + ((change / root.previousClose) * 100).toFixed(2) + "%";
+
             var now = new Date();
             root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
             var next = new Date(now.getTime() + (Plasmoid.configuration.refreshInterval * 60000));
@@ -262,11 +263,6 @@ PlasmoidItem {
             var timestamps = result.timestamp;
 
             var current = meta.regularMarketPrice;
-            // See processSingleData for rationale: regularMarketPreviousClose preferred over chartPreviousClose.
-            var prev = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
-            
-            var change = current - prev;
-            var pct = (change / prev) * 100;
             var curSym = getCurrencySymbol(meta.currency);
 
             var cleanData = [];
@@ -284,8 +280,6 @@ PlasmoidItem {
                 }
             }
 
-            // Fallback: if market hasn't opened yet today resulting in empty cleanData for 1D chart,
-            // extract the most recent trading day available from the queried 2d range.
             if (root.chartRange === "1D" && cleanData.length === 0 && timestamps && timestamps.length > 0) {
                 var dayStartIndex = 0;
                 for (var j = timestamps.length - 1; j > 0; j--) {
@@ -300,6 +294,19 @@ PlasmoidItem {
                     }
                 }
             }
+
+            var prev;
+            if (root.chartRange === "1D") {
+                prev = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
+            } else {
+                prev = meta.chartPreviousClose;
+                if (!prev || prev === 0) {
+                    prev = cleanData.length > 0 ? cleanData[0] : meta.regularMarketPreviousClose;
+                }
+            }
+            
+            var change = current - prev;
+            var pct = prev > 0 ? (change / prev) * 100 : 0;
 
             var itemData = {
                 "ticker": symbol,
