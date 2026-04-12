@@ -49,13 +49,18 @@ Item {
                 placeholderText: "e.g., AAPL"
             }
 
-            TextArea {
-                id: multiListField
+            ScrollView {
                 visible: modeSwitch.checked
                 Kirigami.FormData.label: "Ticker List:"
-                placeholderText: "AAPL, TSLA"
                 Layout.fillWidth: true
                 Layout.minimumHeight: 60
+                Layout.maximumHeight: 500
+                
+                TextArea {
+                    id: multiListField
+                    placeholderText: "AAPL, TSLA"
+                    wrapMode: TextEdit.Wrap
+                }
             }
 
             CheckBox {

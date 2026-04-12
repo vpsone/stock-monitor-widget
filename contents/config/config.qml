@@ -18,7 +18,7 @@ ConfigModel {
         source: "configPanel.qml"
     }
     ConfigCategory {
-        name: "Portfolio Tracking"
+        name: "Portfolio Tracking(WIP)"
         icon: "office-chart-line"
         source: "configPortfolio.qml"
     }
