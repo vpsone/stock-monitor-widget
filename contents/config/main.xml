@@ -13,6 +13,10 @@
             <label>Enable Multi-Stock List Mode</label>
             <default>false</default>
         </entry>
+        <entry name="showTwoList" type="Bool">
+            <label>Show Two List</label>
+            <default>false</default>
+        </entry>
         <entry name="multiTickers" type="String">
             <label>Comma separated list of tickers</label>
             <default>AAPL, TSLA</default>

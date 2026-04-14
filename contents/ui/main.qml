@@ -22,6 +22,7 @@ PlasmoidItem {
 
     property string singleTicker: Plasmoid.configuration.ticker
     property bool isMultiMode: Plasmoid.configuration.isMultiMode
+    property bool showTwoList: Plasmoid.configuration.showTwoList
     property string panelTicker: ""
     property string manualPanelTickerOverride: ""
     property string multiTickers: Plasmoid.configuration.multiTickers
@@ -472,7 +473,7 @@ PlasmoidItem {
     // --- DESKTOP VIEW (Full Representation) ---
 
     fullRepresentation: Item {
-        Layout.minimumWidth: root.isMultiMode ? 380 : 190 // Leave room for both columns in multi mode
+        Layout.minimumWidth: root.showTwoList ? 380 : 190 // Leave room for both columns in multi mode
         Layout.minimumHeight: 170
         // Layout.preferredWidth: 260
         // Layout.preferredHeight: 300
@@ -482,6 +483,7 @@ PlasmoidItem {
             anchors.margins: 10
             spacing: 10
             Rectangle {
+                visible: !root.isMultiMode || root.showTwoList 
                 color: root.bgColor
                 radius: 22
                 opacity: root.bgOpacity / 100.0
@@ -498,7 +500,7 @@ PlasmoidItem {
 
                 Item {
                     id: singleView
-                    visible:  root.singleTicker.trim() !== ""
+                    visible: root.showTwoList || root.singleTicker.trim() !== ""
                     anchors.fill: parent
                     anchors.leftMargin: 16
                     anchors.rightMargin: 16
@@ -619,6 +621,7 @@ PlasmoidItem {
                 }
             }
             Rectangle {
+                visible: root.isMultiMode
                 color: root.bgColor
                 radius: 22
                 opacity: root.bgOpacity / 100.0
@@ -634,7 +637,6 @@ PlasmoidItem {
                 }
                 ListView {
                     id: multiView
-                    visible: root.isMultiMode
                     anchors.fill: parent
                     anchors.leftMargin: 16
                     anchors.rightMargin: 16
