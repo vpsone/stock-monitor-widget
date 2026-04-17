@@ -15,6 +15,7 @@ Item {
     property alias cfg_swapNameAndTicker: swapNameSwitch.checked
     
     property alias cfg_limitHours: limitHoursSwitch.checked
+    property alias cfg_skipWeekendRefresh: skipWeekendRefreshSwitch.checked
     property alias cfg_hideTimestamps: hideTimestampsSwitch.checked
     property alias cfg_startHour: startHourSpin.value
     property alias cfg_startMinute: startMinuteSpin.value
@@ -103,7 +104,13 @@ Item {
             CheckBox {
                 id: limitHoursSwitch
                 Kirigami.FormData.label: "Active Hours:"
-                text: "Only update during market hours"
+                text: "Only refresh data during market hours"
+            }
+
+            CheckBox {
+                id: skipWeekendRefreshSwitch
+                Kirigami.FormData.label: "Weekend Refresh:"
+                text: "Do not refresh data on weekends (Sat,Sun)"
             }
 
             RowLayout {

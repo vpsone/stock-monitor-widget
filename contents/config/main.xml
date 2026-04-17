@@ -43,6 +43,10 @@
             <label>Only update during specific hours</label>
             <default>false</default>
         </entry>
+        <entry name="skipWeekendRefresh" type="Bool">
+            <label>Do not refresh data on weekends</label>
+            <default>true</default>
+        </entry>
         <entry name="startHour" type="Int">
             <default>9</default>
         </entry>
