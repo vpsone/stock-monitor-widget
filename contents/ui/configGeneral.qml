@@ -9,6 +9,7 @@ Item {
     property alias cfg_ticker: tickerField.text
     property alias cfg_refreshInterval: intervalSpin.value
     property alias cfg_isMultiMode: modeSwitch.checked
+    property alias cfg_showTwoList: showTwoListSwitch.checked
     property alias cfg_multiTickers: multiListField.text
     property alias cfg_sortAlphabetically: sortSwitch.checked
     property alias cfg_swapNameAndTicker: swapNameSwitch.checked
@@ -41,7 +42,12 @@ Item {
                 Kirigami.FormData.label: "Display Mode:"
                 text: "Show Multi-Stock List"
             }
-
+            CheckBox {
+                visible: modeSwitch.checked
+                id: showTwoListSwitch
+                Kirigami.FormData.label: "Two List:"
+                text: "single-stock on left side and multi-stock on right side"
+            }
             TextField {
                 id: tickerField
                 visible: !modeSwitch.checked
@@ -121,6 +127,7 @@ Item {
                 Kirigami.FormData.label: "Update Timestamps:"
                 text: "Hide update timestamps"
             }
+            
         }
     }
 }

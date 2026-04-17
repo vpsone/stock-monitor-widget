@@ -22,6 +22,7 @@ PlasmoidItem {
 
     property string singleTicker: Plasmoid.configuration.ticker
     property bool isMultiMode: Plasmoid.configuration.isMultiMode
+    property bool showTwoList: Plasmoid.configuration.showTwoList
     property string panelTicker: ""
     property string manualPanelTickerOverride: ""
     property string multiTickers: Plasmoid.configuration.multiTickers
@@ -472,295 +473,311 @@ PlasmoidItem {
     // --- DESKTOP VIEW (Full Representation) ---
 
     fullRepresentation: Item {
-        Layout.minimumWidth: 190
+        Layout.minimumWidth: root.showTwoList ? 380 : 190 // Leave room for both columns in multi mode
         Layout.minimumHeight: 170
         // Layout.preferredWidth: 260
         // Layout.preferredHeight: 300
 
-        Item {
+        RowLayout {
             anchors.fill: parent
             anchors.margins: 10
-
+            spacing: 10
             Rectangle {
-                anchors.fill: parent
+                visible: !root.isMultiMode || root.showTwoList 
                 color: root.bgColor
                 radius: 22
                 opacity: root.bgOpacity / 100.0
-            }
+                Layout.fillWidth: true
+                Layout.fillHeight: true
 
-            Text {
-                anchors.centerIn: parent
-                text: "Loading..."
-                color: "#888888"
-                font.pixelSize: 14
-                visible: root.isMultiMode && stockModel.count === 0
-            }
-
-            Item {
-                id: singleView
-                visible: !root.isMultiMode
-                anchors.fill: parent
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
-                anchors.topMargin: 16
-                anchors.bottomMargin: 10
-
-                MouseArea {
-                    anchors.fill: parent
-                    z: 100 // Ensure it's on top of everything
-                    cursorShape: Qt.PointingHandCursor
-                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-                    onClicked: (mouse) => {
-                        if (mouse.button === Qt.MiddleButton) {
-                            if (priceText) priceText.opacity = 0.3;
-                            root.refreshData();
-                            timerFullFlicker.restart();
-                        } else {
-                            console.log("Opening URL: " + root.singleTicker);
-                            Qt.openUrlExternally("https://finance.yahoo.com/quote/" + root.singleTicker);
-                        }   
-                    }
-
-                    Timer {
-                        id: timerFullFlicker
-                        interval: 300
-                        onTriggered: if (priceText) priceText.opacity = 1.0;
-                    }
+                Text {
+                    anchors.centerIn: parent
+                    text: "Loading..."
+                    color: "#888888"
+                    font.pixelSize: 14
+                    visible: root.isMultiMode && stockModel.count === 0
                 }
 
-                ColumnLayout {
+                Item {
+                    id: singleView
+                    visible: root.showTwoList || root.singleTicker.trim() !== ""
                     anchors.fill: parent
-                    spacing: 0
-                    RowLayout {
-                        Layout.fillWidth: true
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 16
+                    anchors.topMargin: 16
+                    anchors.bottomMargin: 10
+
+                    MouseArea {
+                        anchors.fill: parent
+                        z: 100 // Ensure it's on top of everything
+                        cursorShape: Qt.PointingHandCursor
+                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                        onClicked: (mouse) => {
+                            if (mouse.button === Qt.MiddleButton) {
+                                if (priceText) priceText.opacity = 0.3;
+                                root.refreshData();
+                                timerFullFlicker.restart();
+                            } else {
+                                console.log("Opening URL: " + root.singleTicker);
+                                Qt.openUrlExternally("https://finance.yahoo.com/quote/" + root.singleTicker);
+                            }   
+                        }
+
+                        Timer {
+                            id: timerFullFlicker
+                            interval: 300
+                            onTriggered: if (priceText) priceText.opacity = 1.0;
+                        }
+                    }
+
+                    ColumnLayout {
+                        anchors.fill: parent
                         spacing: 0
-                        ColumnLayout {
-                            spacing: 2
-                            Layout.alignment: Qt.AlignLeft | Qt.AlignTop
-                            RowLayout {
-                                spacing: 5
-                                Text {
-                                    text: root.isPositive ? "▲" : "▼"
-                                    color: root.isPositive ? root.positiveColor : root.negativeColor
-                                    font.pixelSize: 12
-                                    Layout.alignment: Qt.AlignVCenter
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+                            ColumnLayout {
+                                spacing: 2
+                                Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+                                RowLayout {
+                                    spacing: 5
+                                    Text {
+                                        text: root.isPositive ? "▲" : "▼"
+                                        color: root.isPositive ? root.positiveColor : root.negativeColor
+                                        font.pixelSize: 12
+                                        Layout.alignment: Qt.AlignVCenter
+                                    }
+                                    Text {
+                                        text: root.swapNameAndTicker ? root.singleCompanyName : root.singleTicker
+                                        color: "white"
+                                        font.bold: true
+                                        font.pixelSize: 15
+                                        font.family: "Arial"
+                                        Layout.alignment: Qt.AlignVCenter
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
                                 }
                                 Text {
-                                    text: root.swapNameAndTicker ? root.singleCompanyName : root.singleTicker
-                                    color: "white"
+                                    text: root.swapNameAndTicker ? root.singleTicker : root.singleCompanyName
+                                    color: "#888888"
+                                    font.pixelSize: 10
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+                                Text {
+                                    text: (lastUpdated && nextUpdate) ? "Updated: " + lastUpdated + " • Next: " + nextUpdate : ""
+                                    color: "#666666" // Slightly brighter
+                                    font.pixelSize: 9
+                                    visible: lastUpdated !== "" && !root.isMultiMode && !root.hideTimestamps
+                                }
+                            }
+                            Item { Layout.fillWidth: true }
+                            ColumnLayout {
+                                spacing: 0
+                                Layout.alignment: Qt.AlignRight | Qt.AlignTop
+                                Text {
+                                    text: root.percentChange
+                                    color: root.isPositive ? root.positiveColor : root.negativeColor
+                                    font.pixelSize: 13
+                                    Layout.alignment: Qt.AlignRight
                                     font.bold: true
-                                    font.pixelSize: 15
-                                    font.family: "Arial"
-                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                                Text {
+                                    text: root.priceChange
+                                    color: root.isPositive ? root.positiveColor : root.negativeColor
+                                    font.pixelSize: 13
+                                    Layout.alignment: Qt.AlignRight
+                                    font.bold: true
+                                }
+                            }
+                        }
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.topMargin: 10
+                            Layout.bottomMargin: 5
+                            Canvas {
+                                id: singleCanvas
+                                anchors.fill: parent
+                                visible: root.chartDataPoints && root.chartDataPoints.length > 0
+                                renderStrategy: Canvas.Threaded
+                                renderTarget: Canvas.Image
+                                onPaint: { drawChart(getContext("2d"), width, height, root.chartDataPoints, root.previousClose, root.isPositive, true); }
+                                Connections { target: root; function onChartDataPointsChanged() { singleCanvas.requestPaint(); } }
+                            }
+                        }
+                        Text {
+                            id: priceText
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.currentPrice
+                            color: "white"
+                            font.pixelSize: 26
+                            font.weight: Font.bold
+
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                visible: root.isMultiMode
+                color: root.bgColor
+                radius: 22
+                opacity: root.bgOpacity / 100.0
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Loading..."
+                    color: "#888888"
+                    font.pixelSize: 14
+                    visible: root.isMultiMode && stockModel.count === 0
+                }
+                ListView {
+                    id: multiView
+                    anchors.fill: parent
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 16
+                    anchors.bottomMargin: 16
+                    anchors.topMargin: 0
+
+                    clip: true
+                    model: stockModel
+                    spacing: 0
+
+                    delegate: Item {
+                        width: multiView.width
+                        height: 60
+
+                        MouseArea {
+                            anchors.fill: parent
+                            z: 100 // Above the row layout
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                            onClicked: (mouse) => {
+                                if (mouse.button === Qt.MiddleButton) {
+                                    parent.opacity = 0.4;
+                                    root.refreshData();
+                                    timerListFlicker.restart();
+                                } else if (mouse.button === Qt.LeftButton) {
+                                    console.log("Opening URL: " + model.ticker);
+                                    Qt.openUrlExternally("https://finance.yahoo.com/quote/" + model.ticker);
+                                } else if (mouse.button === Qt.RightButton) {
+                                    root.manualPanelTickerOverride = model.ticker;
+                                    root.singleTicker = model.ticker; // Also update singleTicker to keep singleView in sync
+                                    root.refreshData();
+                                }
+                            }
+                            Timer {
+                                id: timerListFlicker
+                                interval: 300
+                                onTriggered: parent.opacity = 1.0;
+                            }
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 10
+                            ColumnLayout {
+                                Layout.preferredWidth: parent.width * 0.35
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 2
+                                RowLayout {
+                                    spacing: 4
+                                    Text {
+                                        text: model.isPos ? "▲" : "▼"
+                                        color: model.isPos ? root.positiveColor : root.negativeColor
+                                        font.pixelSize: 10
+                                    }
+                                    Text {
+                                        text: root.swapNameAndTicker ? model.name : model.ticker
+                                        color: "white"
+                                        // font.bold: true
+                                        font.pixelSize: 14
+                                    }
+                                }
+                                Text {
+                                    text: root.swapNameAndTicker ? model.ticker : model.name
+                                    color: "#888888"
+                                    font.pixelSize: 10
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
                             }
-                            Text {
-                                text: root.swapNameAndTicker ? root.singleTicker : root.singleCompanyName
-                                color: "#888888"
-                                font.pixelSize: 10
-                                elide: Text.ElideRight
+                            Item {
+                                visible: parent.width > 220
                                 Layout.fillWidth: true
-                            }
-                            Text {
-                                text: (lastUpdated && nextUpdate) ? "Updated: " + lastUpdated + " • Next: " + nextUpdate : ""
-                                color: "#666666" // Slightly brighter
-                                font.pixelSize: 9
-                                visible: lastUpdated !== "" && !root.isMultiMode && !root.hideTimestamps
-                            }
-                        }
-                        Item { Layout.fillWidth: true }
-                        ColumnLayout {
-                            spacing: 0
-                            Layout.alignment: Qt.AlignRight | Qt.AlignTop
-                            Text {
-                                text: root.percentChange
-                                color: root.isPositive ? root.positiveColor : root.negativeColor
-                                font.pixelSize: 13
-                                Layout.alignment: Qt.AlignRight
-                                font.bold: true
-                            }
-                            Text {
-                                text: root.priceChange
-                                color: root.isPositive ? root.positiveColor : root.negativeColor
-                                font.pixelSize: 13
-                                Layout.alignment: Qt.AlignRight
-                                font.bold: true
-                            }
-                        }
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.topMargin: 10
-                        Layout.bottomMargin: 5
-                        Canvas {
-                            id: singleCanvas
-                            anchors.fill: parent
-                            visible: root.chartDataPoints && root.chartDataPoints.length > 0
-                            renderStrategy: Canvas.Threaded
-                            renderTarget: Canvas.Image
-                            onPaint: { drawChart(getContext("2d"), width, height, root.chartDataPoints, root.previousClose, root.isPositive, true); }
-                            Connections { target: root; function onChartDataPointsChanged() { singleCanvas.requestPaint(); } }
-                        }
-                    }
-                    Text {
-                        id: priceText
-                        Layout.alignment: Qt.AlignHCenter
-                        text: root.currentPrice
-                        color: "white"
-                        font.pixelSize: 26
-                        font.weight: Font.bold
-
-                        Behavior on opacity { NumberAnimation { duration: 150 } }
-                    }
-                }
-            }
-
-            ListView {
-                id: multiView
-                visible: root.isMultiMode
-                anchors.fill: parent
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
-                anchors.bottomMargin: 16
-                anchors.topMargin: 0
-
-                clip: true
-                model: stockModel
-                spacing: 0
-
-                delegate: Item {
-                    width: multiView.width
-                    height: 60
-
-                    MouseArea {
-                        anchors.fill: parent
-                        z: 100 // Above the row layout
-                        cursorShape: Qt.PointingHandCursor
-                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-                        onClicked: (mouse) => {
-                            if (mouse.button === Qt.MiddleButton) {
-                                parent.opacity = 0.4;
-                                root.refreshData();
-                                timerListFlicker.restart();
-                            } else if (mouse.button === Qt.LeftButton) {
-                                console.log("Opening URL: " + model.ticker);
-                                Qt.openUrlExternally("https://finance.yahoo.com/quote/" + model.ticker);
-                            } else if (mouse.button === Qt.RightButton) {
-                                root.manualPanelTickerOverride = model.ticker;
-                                root.refreshData();
-                            }
-                        }
-                        Timer {
-                            id: timerListFlicker
-                            interval: 300
-                            onTriggered: parent.opacity = 1.0;
-                        }
-                    }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 10
-                        ColumnLayout {
-                            Layout.preferredWidth: parent.width * 0.35
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 2
-                            RowLayout {
-                                spacing: 4
-                                Text {
-                                    text: model.isPos ? "▲" : "▼"
-                                    color: model.isPos ? root.positiveColor : root.negativeColor
-                                    font.pixelSize: 10
+                                Layout.fillHeight: true
+                                Canvas {
+                                    id: sparkLine
+                                    anchors.fill: parent
+                                    renderStrategy: Canvas.Threaded
+                                    renderTarget: Canvas.Image
+                                    onPaint: { drawChart(getContext("2d"), width, height, model.chartPoints, model.prevClose, model.isPos, false); }
+                                    Component.onCompleted: sparkLine.requestPaint()
+                                    Connections {
+                                        target: stockModel
+                                        function onDataChanged() { sparkLine.requestPaint() }
+                                    }
                                 }
+                            }
+                            ColumnLayout {
+                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                spacing: 2
                                 Text {
-                                    text: root.swapNameAndTicker ? model.name : model.ticker
+                                    text: model.price
                                     color: "white"
                                     // font.bold: true
                                     font.pixelSize: 14
+                                    Layout.alignment: Qt.AlignRight
                                 }
-                            }
-                            Text {
-                                text: root.swapNameAndTicker ? model.ticker : model.name
-                                color: "#888888"
-                                font.pixelSize: 10
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
-                            }
-                        }
-                        Item {
-                            visible: parent.width > 220
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            Canvas {
-                                id: sparkLine
-                                anchors.fill: parent
-                                renderStrategy: Canvas.Threaded
-                                renderTarget: Canvas.Image
-                                onPaint: { drawChart(getContext("2d"), width, height, model.chartPoints, model.prevClose, model.isPos, false); }
-                                Component.onCompleted: sparkLine.requestPaint()
-                                Connections {
-                                    target: stockModel
-                                    function onDataChanged() { sparkLine.requestPaint() }
-                                }
-                            }
-                        }
-                        ColumnLayout {
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            spacing: 2
-                            Text {
-                                text: model.price
-                                color: "white"
-                                // font.bold: true
-                                font.pixelSize: 14
-                                Layout.alignment: Qt.AlignRight
-                            }
-                            Rectangle {
-                                radius: 4
-                                // Background: translucent tint of the color for theme independence
-                                color: model.isPos
-                                       ? Qt.rgba(root.positiveColor.r, root.positiveColor.g, root.positiveColor.b, 0.15)
-                                       : Qt.rgba(root.negativeColor.r, root.negativeColor.g, root.negativeColor.b, 0.15)
-                                border.color: model.isPos ? root.positiveColor : root.negativeColor
-                                border.width: 1
-                                Layout.preferredWidth: pctTextL.implicitWidth + (Kirigami.Units.smallSpacing * 2)
-                                Layout.preferredHeight: pctTextL.implicitHeight + (Kirigami.Units.smallSpacing / 2)
-                                Layout.alignment: Qt.AlignRight
+                                Rectangle {
+                                    radius: 4
+                                    // Background: translucent tint of the color for theme independence
+                                    color: model.isPos
+                                        ? Qt.rgba(root.positiveColor.r, root.positiveColor.g, root.positiveColor.b, 0.15)
+                                        : Qt.rgba(root.negativeColor.r, root.negativeColor.g, root.negativeColor.b, 0.15)
+                                    border.color: model.isPos ? root.positiveColor : root.negativeColor
+                                    border.width: 1
+                                    Layout.preferredWidth: pctTextL.implicitWidth + (Kirigami.Units.smallSpacing * 2)
+                                    Layout.preferredHeight: pctTextL.implicitHeight + (Kirigami.Units.smallSpacing / 2)
+                                    Layout.alignment: Qt.AlignRight
 
-                                Text {
-                                    id: pctTextL
-                                    anchors.centerIn: parent
-                                    text: model.change + " (" + model.pct + ")"
-                                    color: model.isPos ? root.positiveColor : root.negativeColor
-                                    font.pixelSize: 11
-                                    font.weight: Font.Black
+                                    Text {
+                                        id: pctTextL
+                                        anchors.centerIn: parent
+                                        text: model.change + " (" + model.pct + ")"
+                                        color: model.isPos ? root.positiveColor : root.negativeColor
+                                        font.pixelSize: 11
+                                        font.weight: Font.Black
+                                    }
                                 }
                             }
                         }
-                    }
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 1
-                        color: "#333333"
-                        visible: index < multiView.count - 1
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: "#333333"
+                            visible: index < multiView.count - 1
+                        }
                     }
                 }
-            }
-            Text {
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottomMargin: 8
-                text: (lastUpdated && nextUpdate) ? "Updated: " + lastUpdated + " • Next: " + nextUpdate : ""
-                color: "#777777"
-                font.pixelSize: 10
-                visible: lastUpdated !== "" && root.isMultiMode && !root.hideTimestamps
+                Text {
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottomMargin: 8
+                    text: (lastUpdated && nextUpdate) ? "Updated: " + lastUpdated + " • Next: " + nextUpdate : ""
+                    color: "#777777"
+                    font.pixelSize: 10
+                    visible: lastUpdated !== "" && root.isMultiMode && !root.hideTimestamps
+                }
             }
         }
     }
-
     function drawChart(ctx, w, h, data, prevClose, isPos, drawBackground) {
         ctx.clearRect(0, 0, w, h);
         if (!data || data.length < 2) return;
