@@ -5,6 +5,10 @@
       http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
     <kcfgfile name=""/>
     <group name="General">
+        <entry name="isLightTheme" type="Bool">
+            <label>Use Light Theme</label>
+            <default>false</default>
+        </entry>
         <entry name="ticker" type="String">
             <label>Single Stock Ticker</label>
             <default>AAPL</default>
@@ -58,6 +62,22 @@
         </entry>
         <entry name="endMinute" type="Int">
             <default>30</default>
+        </entry>
+        <entry name="tickerColor" type="Color">
+            <label>Ticker Text Color</label>
+            <default>#FFFFFF</default>
+        </entry>
+        <entry name="tickerOpacity" type="Int">
+            <label>Ticker Text Opacity</label>
+            <default>100</default>
+        </entry>
+        <entry name="priceColor" type="Color">
+            <label>Price Text Color</label>
+            <default>#FFFFFF</default>
+        </entry>
+        <entry name="priceOpacity" type="Int">
+            <label>Price Text Opacity</label>
+            <default>100</default>
         </entry>
         <entry name="positiveColor" type="Color">
             <label>Positive Change Color</label>

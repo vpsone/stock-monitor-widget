@@ -6,15 +6,14 @@ Rectangle {
     id: singleStockRoot
     property var rootItem
 
-    color: rootItem.bgColor
+    color: Qt.rgba(rootItem.bgColor.r, rootItem.bgColor.g, rootItem.bgColor.b, rootItem.bgOpacity / 100.0)
     radius: 22
-    opacity: rootItem.bgOpacity / 100.0
     clip: true
 
     Text {
         anchors.centerIn: parent
         text: "Loading..."
-        color: "#888888"
+        color: rootItem.secondaryTextColor
         font.pixelSize: 14
         visible: rootItem.isMultiMode && singleStockRoot.visible && (!rootItem.chartDataPoints || rootItem.chartDataPoints.length === 0)
     }
@@ -47,7 +46,7 @@ Rectangle {
             Timer {
                 id: timerFullFlicker
                 interval: 300
-                onTriggered: if (priceText) priceText.opacity = 1.0;
+                onTriggered: if (priceText) priceText.opacity = Qt.binding(function() { return rootItem.priceOpacity / 100.0; });
             }
         }
 
@@ -70,7 +69,8 @@ Rectangle {
                         }
                         Text {
                             text: rootItem.swapNameAndTicker ? rootItem.singleCompanyName : rootItem.singleTicker
-                            color: "white"
+                            color: rootItem.tickerColor
+                            opacity: rootItem.tickerOpacity / 100.0
                             font.bold: true
                             font.pixelSize: 15
                             font.family: "Arial"
@@ -81,14 +81,14 @@ Rectangle {
                     }
                     Text {
                         text: rootItem.swapNameAndTicker ? rootItem.singleTicker : rootItem.singleCompanyName
-                        color: "#888888"
+                        color: rootItem.secondaryTextColor
                         font.pixelSize: 10
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
                     Text {
                         text: (rootItem.lastUpdated && rootItem.nextUpdate) ? "Updated: " + rootItem.lastUpdated + " • Next: " + rootItem.nextUpdate : ""
-                        color: "#666666" // Slightly brighter
+                        color: rootItem.secondaryTextColor // Slightly brighter
                         font.pixelSize: 9
                         visible: rootItem.lastUpdated !== "" && !rootItem.isMultiMode && !rootItem.hideTimestamps
                     }
@@ -132,7 +132,8 @@ Rectangle {
                 id: priceText
                 Layout.alignment: Qt.AlignHCenter
                 text: rootItem.currentPrice
-                color: "white"
+                color: rootItem.priceColor
+                opacity: rootItem.priceOpacity / 100.0
                 font.pixelSize: 26
 
                 Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -156,7 +157,7 @@ Rectangle {
         if (drawBackground) {
             var prevY = getY(prevClose);
             ctx.beginPath();
-            ctx.strokeStyle = "#333333";
+            ctx.strokeStyle = rootItem.chartBaseColor;
             ctx.lineWidth = 1;
             ctx.setLineDash([4, 4]);
             ctx.moveTo(0, prevY);

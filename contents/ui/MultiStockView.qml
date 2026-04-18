@@ -7,15 +7,14 @@ Rectangle {
     property var rootItem
     property var listModel
 
-    color: rootItem.bgColor
+    color: Qt.rgba(rootItem.bgColor.r, rootItem.bgColor.g, rootItem.bgColor.b, rootItem.bgOpacity / 100.0)
     radius: 22
-    opacity: rootItem.bgOpacity / 100.0
     clip: true
 
     Text {
         anchors.centerIn: parent
         text: "Loading..."
-        color: "#888888"
+        color: rootItem.secondaryTextColor
         font.pixelSize: 14
         visible: rootItem.isMultiMode && listModel.count === 0
     }
@@ -77,13 +76,14 @@ Rectangle {
                         }
                         Text {
                             text: rootItem.swapNameAndTicker ? model.name : model.ticker
-                            color: "white"
+                            color: rootItem.tickerColor
+                            opacity: rootItem.tickerOpacity / 100.0
                             font.pixelSize: 14
                         }
                     }
                     Text {
                         text: rootItem.swapNameAndTicker ? model.ticker : model.name
-                        color: "#888888"
+                        color: rootItem.secondaryTextColor
                         font.pixelSize: 10
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -95,7 +95,8 @@ Rectangle {
                     spacing: 2
                     Text {
                         text: model.price
-                        color: "white"
+                        color: rootItem.priceColor
+                        opacity: rootItem.priceOpacity / 100.0
                         font.pixelSize: 14
                         Layout.alignment: Qt.AlignRight
                     }
@@ -127,7 +128,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: 1
-                color: "#333333"
+                color: rootItem.chartBaseColor
                 visible: index < multiView.count - 1
             }
         }
@@ -137,7 +138,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottomMargin: 8
         text: (rootItem.lastUpdated && rootItem.nextUpdate) ? "Updated: " + rootItem.lastUpdated + " • Next: " + rootItem.nextUpdate : ""
-        color: "#777777"
+        color: rootItem.secondaryTextColor
         font.pixelSize: 10
         visible: rootItem.lastUpdated !== "" && rootItem.isMultiMode && !rootItem.hideTimestamps
     }

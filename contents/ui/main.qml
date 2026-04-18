@@ -44,14 +44,21 @@ PlasmoidItem {
     property bool isPositive: true
     property string currencySym: ""
 
+    property bool isLightTheme: Plasmoid.configuration.isLightTheme
     property color positiveColor: Plasmoid.configuration.positiveColor
     property color negativeColor: Plasmoid.configuration.negativeColor
+    property color tickerColor: Qt.colorEqual(Plasmoid.configuration.tickerColor, "#ffffff") && isLightTheme ? "#000000" : Plasmoid.configuration.tickerColor
+    property int tickerOpacity: Plasmoid.configuration.tickerOpacity
+    property color priceColor: Qt.colorEqual(Plasmoid.configuration.priceColor, "#ffffff") && isLightTheme ? "#000000" : Plasmoid.configuration.priceColor
+    property int priceOpacity: Plasmoid.configuration.priceOpacity
     property int bgOpacity: Plasmoid.configuration.bgOpacity
     property bool hideChangePercentage: Plasmoid.configuration.hideChangePercentage
     property bool hideTimestamps: Plasmoid.configuration.hideTimestamps
     property string lastUpdated: ""
     property string nextUpdate: ""
-    property color bgColor: "#1a1a1a"
+    property color bgColor: isLightTheme ? "#ffffff" : "#1a1a1a"
+    property color chartBaseColor: isLightTheme ? "#e0e0e0" : "#333333"
+    property color secondaryTextColor: isLightTheme ? "#555555" : "#888888"
 
     ListModel { id: stockModel }
 
