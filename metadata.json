@@ -15,7 +15,7 @@
     "Description": "Modernized stock monitor for KDE with badge UI and custom colors.",
     "Icon": "/icon.png",
     "Id": "com.vps.stockmonitor",
-    "Version": "2.0",
+    "Version": "2.1",
     "Website": "https://github.com/vpsone/stock-monitor-widget",
     "License": "GPL-3.0+"
   },
