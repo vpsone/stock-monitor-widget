@@ -9,6 +9,7 @@ Rectangle {
     color: rootItem.bgColor
     radius: 22
     opacity: rootItem.bgOpacity / 100.0
+    clip: true
 
     Text {
         anchors.centerIn: parent

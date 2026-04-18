@@ -77,7 +77,7 @@
         </entry>
         <entry name="hideTimestamps" type="Bool">
             <label>Hide Update Timestamps</label>
-            <default>false</default>
+            <default>true</default>
         </entry>
         
         <!-- Portfolio Tracking -->
