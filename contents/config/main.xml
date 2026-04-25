@@ -99,12 +99,20 @@
             <label>Hide Update Timestamps</label>
             <default>true</default>
         </entry>
+        <entry name="formatPrices" type="Bool">
+            <label>Format stock price with commas</label>
+            <default>true</default>
+        </entry>
+        <entry name="hideDecimals" type="Bool">
+            <label>Hide decimals in stock price</label>
+            <default>false</default>
+        </entry>
         
         <!-- Portfolio Tracking -->
         <entry name="portfolioData" type="String">
             <label>Portfolio holdings data (JSON)</label>
             <default></default>
-        </entry>
+        </entry>AnswerThePublic.com
         <entry name="showPortfolioMode" type="Bool">
             <label>Show portfolio profit/loss in views</label>
             <default>false</default>

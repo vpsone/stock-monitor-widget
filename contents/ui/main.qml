@@ -54,6 +54,8 @@ PlasmoidItem {
     property int bgOpacity: Plasmoid.configuration.bgOpacity
     property bool hideChangePercentage: Plasmoid.configuration.hideChangePercentage
     property bool hideTimestamps: Plasmoid.configuration.hideTimestamps
+    property bool formatPrices: Plasmoid.configuration.formatPrices
+    property bool hideDecimals: Plasmoid.configuration.hideDecimals
     property string lastUpdated: ""
     property string nextUpdate: ""
     property color bgColor: isLightTheme ? "#ffffff" : "#1a1a1a"
@@ -201,7 +203,7 @@ PlasmoidItem {
             root.singleCompanyName = meta.shortName || meta.longName || (fallbackSymbol || root.singleTicker);
             root.currencySym = getCurrencySymbol(meta.currency);
             root.currentRawPrice = meta.regularMarketPrice;
-            root.currentPrice = root.currencySym + meta.regularMarketPrice.toFixed(2);
+            root.currentPrice = root.currencySym + formatNumber(meta.regularMarketPrice, false);
 
             var cleanData = [];
             var startTime = (meta.currentTradingPeriod && meta.currentTradingPeriod.regular) ? meta.currentTradingPeriod.regular.start : 0;
@@ -245,8 +247,8 @@ PlasmoidItem {
 
             var change = meta.regularMarketPrice - root.previousClose;
             root.isPositive = change >= 0;
-            root.priceChange = (change > 0 ? "+" : "") + change.toFixed(2);
-            root.percentChange = (change > 0 ? "+" : "") + ((change / root.previousClose) * 100).toFixed(2) + "%";
+            root.priceChange = formatNumber(change, true);
+            root.percentChange = formatNumber((change / root.previousClose) * 100, true) + "%";
 
             var now = new Date();
             root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
@@ -314,9 +316,9 @@ PlasmoidItem {
             var itemData = {
                 "ticker": symbol,
                 "name": meta.shortName || meta.longName || symbol,
-                "price": curSym + current.toFixed(2),
-                "change": (change > 0 ? "+" : "") + change.toFixed(2),
-                "pct": (change > 0 ? "+" : "") + pct.toFixed(2) + "%",
+                "price": curSym + formatNumber(current, false),
+                "change": formatNumber(change, true),
+                "pct": formatNumber(pct, true) + "%",
                 "isPos": change >= 0,
                 "chartPoints": cleanData,
                 "prevClose": prev
@@ -340,10 +342,27 @@ PlasmoidItem {
         } catch (e) { console.log("Error parsing multi: " + e); }
     }
 
-    // Force commas manually (e.g. 1234567 -> "1,234,567")
-    function formatWithCommas(amount) {
-        // Round to integer first, then add commas
-        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    function formatNumber(amount, isChange) {
+        var num = parseFloat(amount);
+        if (isNaN(num)) return amount;
+        
+        var isPositive = num >= 0;
+        var absNum = Math.abs(num);
+        
+        var hideDecs = root.hideDecimals && !isChange;
+        var formatted = hideDecs ? Math.round(absNum).toString() : absNum.toFixed(2);
+        
+        if (root.formatPrices) {
+            var parts = formatted.split(".");
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            formatted = parts.join(".");
+        }
+        
+        var sign = "";
+        if (isChange && isPositive && num > 0) sign = "+";
+        else if (!isPositive) sign = "-";
+        
+        return sign + formatted;
     }
 
     onSingleTickerChanged: refreshData()
@@ -361,6 +380,8 @@ PlasmoidItem {
     }
     onMultiTickersChanged: { stockModel.clear(); refreshData(); }
     onSortAlphabeticallyChanged: { stockModel.clear(); refreshData(); }
+    onFormatPricesChanged: refreshData()
+    onHideDecimalsChanged: refreshData()
     // CHANGED: Update when range changes
     onChartRangeChanged: { stockModel.clear(); refreshData(); }
 
@@ -438,7 +459,7 @@ PlasmoidItem {
                     Layout.alignment: Qt.AlignLeft
                     
                     Text {
-                        text: root.currencySym + root.currentRawPrice
+                        text: root.currentPrice
                         color: root.isPositive ? root.positiveColor : root.negativeColor
                         font.pixelSize: 11
                         font.weight: Font.Bold
