@@ -112,7 +112,7 @@
         <entry name="portfolioData" type="String">
             <label>Portfolio holdings data (JSON)</label>
             <default></default>
-        </entry>AnswerThePublic.com
+        </entry>
         <entry name="showPortfolioMode" type="Bool">
             <label>Show portfolio profit/loss in views</label>
             <default>false</default>
