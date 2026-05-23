@@ -117,5 +117,9 @@
             <label>Show portfolio profit/loss in views</label>
             <default>false</default>
         </entry>
+        <entry name="baseCurrency" type="String">
+            <label>Portfolio base currency for totals</label>
+            <default>USD</default>
+        </entry>
     </group>
 </kcfg>
