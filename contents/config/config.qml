@@ -23,7 +23,7 @@ ConfigModel {
         source: "configPortfolio.qml"
     }
     ConfigCategory {
-        name: "Appearence"
+        name: "Appearance"
         icon: "preferences-desktop-color"
         source: "configAppearance.qml"
     }
