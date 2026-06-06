@@ -17,6 +17,7 @@ Item {
     property alias cfg_limitHours: limitHoursSwitch.checked
     property alias cfg_skipWeekendRefresh: skipWeekendRefreshSwitch.checked
     property alias cfg_hideTimestamps: hideTimestampsSwitch.checked
+    property alias cfg_hideChangePercentage: hidePercentSwitch.checked
     property alias cfg_formatPrices: formatPricesSwitch.checked
     property alias cfg_hideDecimals: hideDecimalsSwitch.checked
     property alias cfg_startHour: startHourSpin.value
@@ -25,10 +26,16 @@ Item {
     property alias cfg_endMinute: endMinuteSpin.value
 
     property string cfg_chartRange
+    property string cfg_baseCurrency: "USD"
 
     onCfg_chartRangeChanged: {
         var idx = rangeCombo.indexOfValue(cfg_chartRange)
         if (idx >= 0) rangeCombo.currentIndex = idx
+    }
+
+    onCfg_baseCurrencyChanged: {
+        var idx = baseCurrencyCombo.indexOfValue(cfg_baseCurrency)
+        if (idx >= 0) baseCurrencyCombo.currentIndex = idx
     }
 
     ScrollView {
@@ -136,6 +143,12 @@ Item {
                 Kirigami.FormData.label: "Update Timestamps:"
                 text: "Hide update timestamps"
             }
+
+            CheckBox {
+                id: hidePercentSwitch
+                Kirigami.FormData.label: "Change Percentage Badge:"
+                text: "Hide percent change badge in compact panel"
+            }
             
             CheckBox {
                 id: formatPricesSwitch
@@ -146,6 +159,15 @@ Item {
             CheckBox {
                 id: hideDecimalsSwitch
                 text: "Remove decimals from stock price"
+            }
+
+            ComboBox {
+                id: baseCurrencyCombo
+                Kirigami.FormData.label: "Portfolio Base Currency:"
+                model: ["USD", "EUR", "GBP", "JPY", "CNY", "INR"]
+                onCurrentValueChanged: {
+                    cfg_baseCurrency = currentValue
+                }
             }
             
         }

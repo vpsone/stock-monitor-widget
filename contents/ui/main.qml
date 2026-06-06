@@ -18,12 +18,19 @@ PlasmoidItem {
     property string singleTicker: Plasmoid.configuration.ticker
     property bool isMultiMode: Plasmoid.configuration.isMultiMode
     property bool showTwoList: Plasmoid.configuration.showTwoList
+    property bool showPortfolioMode: Plasmoid.configuration.showPortfolioMode
     property string panelTicker: ""
     property string manualPanelTickerOverride: ""
     property string multiTickers: Plasmoid.configuration.multiTickers
     property bool sortAlphabetically: Plasmoid.configuration.sortAlphabetically
     property bool swapNameAndTicker: Plasmoid.configuration.swapNameAndTicker
     property string chartRange: Plasmoid.configuration.chartRange
+    property string portfolioData: Plasmoid.configuration.portfolioData
+    property string baseCurrency: Plasmoid.configuration.baseCurrency || "USD"
+
+    // FX rate cache: { "EURUSD": 1.1234, ... }
+    property var fxRateCache: ({})
+    property var fxRateFetchStatus: ({})  // Track which pairs are being fetched
 
     // Time Limits Config
     property bool limitHours: Plasmoid.configuration.limitHours
@@ -61,8 +68,13 @@ PlasmoidItem {
     property color bgColor: isLightTheme ? "#ffffff" : "#1a1a1a"
     property color chartBaseColor: isLightTheme ? "#e0e0e0" : "#333333"
     property color secondaryTextColor: isLightTheme ? "#555555" : "#888888"
+    property double portfolioTotalValue: 0.0
+    property double portfolioTotalInvested: 0.0
+    property double portfolioTotalPnL: 0.0
+    property string portfolioCurrencySym: ""
 
     ListModel { id: stockModel }
+    ListModel { id: portfolioModel }
 
     function getCurrencySymbol(code) {
         // Fix: Return empty string if code is missing or literal "null"
@@ -73,6 +85,136 @@ PlasmoidItem {
             "CNY": "¥", "KRW": "₩", "RUB": "₽", "TRY": "₺"
         };
         return symbols[code] || code + " ";
+    }
+
+    function getFxRate(fromCurrency, toCurrency, callback) {
+        // If same currency, rate is 1.0
+        if (fromCurrency === toCurrency) {
+            callback(1.0);
+            return;
+        }
+
+        var pair = fromCurrency + toCurrency;  // e.g. "EURUSD"
+        var cachedRate = fxRateCache[pair];
+
+        // Return cached rate if available
+        if (cachedRate !== undefined) {
+            callback(cachedRate);
+            return;
+        }
+
+        // Avoid duplicate requests
+        if (fxRateFetchStatus[pair]) {
+            return;
+        }
+
+        fxRateFetchStatus[pair] = true;
+
+        var xhr = new XMLHttpRequest();
+        var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + pair + "=X?interval=1d&range=1d";
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                fxRateFetchStatus[pair] = false;
+                if (xhr.status === 200) {
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        var rate = response.chart.result[0].meta.regularMarketPrice || 1.0;
+                        fxRateCache[pair] = rate;
+                        callback(rate);
+                    } catch (e) {
+                        console.log("Error parsing FX rate for " + pair + ": " + e);
+                        callback(1.0);
+                    }
+                } else {
+                    console.log("Error fetching FX rate for " + pair);
+                    callback(1.0);
+                }
+            }
+        };
+        xhr.open("GET", url);
+        xhr.send();
+    }
+
+    function convertToBaseCurrency(amount, fromCurrency, callback) {
+        if (fromCurrency === root.baseCurrency) {
+            callback(amount);
+            return;
+        }
+
+        getFxRate(fromCurrency, root.baseCurrency, function(rate) {
+            callback(amount * rate);
+        });
+    }
+
+    function safeParsePortfolio(data) {
+        if (!data) return [];
+        try {
+            return JSON.parse(data);
+        } catch (e) {
+            console.log("Error parsing portfolio data: " + e);
+            return [];
+        }
+    }
+
+    function aggregatePortfolio(holdings) {
+        var map = {};
+        for (var i = 0; i < holdings.length; i++) {
+            var h = holdings[i] || {};
+            var ticker = (h.ticker || "").trim().toUpperCase();
+            if (!ticker) continue;
+
+            var shares = parseFloat(h.shares) || 0;
+            var averageCost = parseFloat(h.averageCost) || 0;
+            var commission = parseFloat(h.commission) || 0;
+            var invested = (shares * averageCost) + commission;
+
+            if (!map[ticker]) {
+                map[ticker] = {
+                    ticker: ticker,
+                    shares: 0,
+                    totalInvested: 0,
+                    commission: 0,
+                    addedDate: h.addedDate || "",
+                    name: h.name || ticker
+                };
+            }
+
+            map[ticker].shares += shares;
+            map[ticker].totalInvested += invested;
+            map[ticker].commission += commission;
+            if (!map[ticker].addedDate && h.addedDate) map[ticker].addedDate = h.addedDate;
+            if (h.name) map[ticker].name = h.name;
+        }
+
+        var list = [];
+        for (var key in map) {
+            if (!map.hasOwnProperty(key)) continue;
+            var item = map[key];
+            item.averageCost = item.shares > 0 ? item.totalInvested / item.shares : 0;
+            list.push(item);
+        }
+        return list;
+    }
+
+    function fetchQuoteForSymbol(symbol, callback) {
+        var xhr = new XMLHttpRequest();
+        var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?range=1d&interval=2m";
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    try {
+                        callback(symbol, JSON.parse(xhr.responseText));
+                    } catch (e) {
+                        console.log("Error parsing quote for " + symbol + ": " + e);
+                        callback(symbol, null);
+                    }
+                } else {
+                    callback(symbol, null);
+                }
+            }
+        }
+        xhr.open("GET", url);
+        xhr.send();
     }
 
     // --- NEW HELPER: GET API PARAMETERS BASED ON CONFIG ---
@@ -93,7 +235,10 @@ PlasmoidItem {
     }
 
     function refreshData() {
-        if (root.isMultiMode) {
+        if (root.showPortfolioMode) {
+            fetchPortfolio();
+        }
+        else if (root.isMultiMode) {
             fetchMultiStocks();
         } 
         else {
@@ -191,6 +336,99 @@ PlasmoidItem {
             xhr.open("GET", url);
             xhr.send();
         });
+    }
+
+    function fetchPortfolio() {
+        var holdings = aggregatePortfolio(safeParsePortfolio(root.portfolioData));
+        portfolioModel.clear();
+        portfolioTotalValue = 0.0;
+        portfolioTotalInvested = 0.0;
+        portfolioTotalPnL = 0.0;
+        portfolioCurrencySym = "";
+
+        if (holdings.length === 0) {
+            return;
+        }
+
+        for (var i = 0; i < holdings.length; i++) {
+            fetchQuoteForSymbol(holdings[i].ticker, processPortfolioRow);
+        }
+    }
+
+    function processPortfolioRow(symbol, json) {
+        try {
+            if (!json || !json.chart || !json.chart.result || !json.chart.result.length) return;
+
+            var holdings = aggregatePortfolio(safeParsePortfolio(root.portfolioData));
+            var holding = null;
+            for (var i = 0; i < holdings.length; i++) {
+                if (holdings[i].ticker === symbol) {
+                    holding = holdings[i];
+                    break;
+                }
+            }
+            if (!holding) return;
+
+            var result = json.chart.result[0];
+            var meta = result.meta;
+            var current = meta.regularMarketPrice;
+            var nativeCurrency = meta.currency;
+            var currency = getCurrencySymbol(nativeCurrency);
+            var marketValueNative = (parseFloat(current) || 0) * holding.shares;
+            var pnlNative = marketValueNative - holding.totalInvested;
+            var pnlPct = holding.totalInvested > 0 ? (pnlNative / holding.totalInvested) * 100 : 0;
+
+            if (portfolioCurrencySym === "") {
+                portfolioCurrencySym = getCurrencySymbol(root.baseCurrency);
+            }
+
+            // Asynchronously convert to base currency
+            convertToBaseCurrency(marketValueNative, nativeCurrency, function(marketValueBase) {
+                convertToBaseCurrency(pnlNative, nativeCurrency, function(pnlBase) {
+                    convertToBaseCurrency(holding.totalInvested, nativeCurrency, function(investedBase) {
+                        portfolioModel.append({
+                            "ticker": symbol,
+                            "name": meta.shortName || meta.longName || symbol,
+                            "shares": holding.shares,
+                            "averageCost": holding.averageCost,
+                            "totalInvested": investedBase,
+                            "currentPrice": current,
+                            "currentPriceText": currency + formatNumber(current, false),
+                            "marketValue": marketValueBase,
+                            "marketValueText": getCurrencySymbol(root.baseCurrency) + formatNumber(marketValueBase, false),
+                            "unrealizedPnL": pnlBase,
+                            "unrealizedPnLText": formatNumber(pnlBase, true),
+                            "percentReturn": pnlPct,
+                            "percentReturnText": formatNumber(pnlPct, true) + "%",
+                            "isPos": pnlBase >= 0,
+                            "commission": holding.commission,
+                            "addedDate": holding.addedDate
+                        });
+
+                        recalculatePortfolioTotals();
+
+                        var now = new Date();
+                        root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
+                        var next = new Date(now.getTime() + (Plasmoid.configuration.refreshInterval * 60000));
+                        root.nextUpdate = next.toLocaleTimeString(Qt.locale(), "HH:mm");
+                    });
+                });
+            });
+        } catch (e) {
+            console.log("Error parsing portfolio row: " + e);
+        }
+    }
+
+    function recalculatePortfolioTotals() {
+        var value = 0.0;
+        var invested = 0.0;
+        for (var i = 0; i < portfolioModel.count; i++) {
+            value += parseFloat(portfolioModel.get(i).marketValue) || 0;
+            invested += parseFloat(portfolioModel.get(i).totalInvested) || 0;
+        }
+        portfolioTotalValue = value;
+        portfolioTotalInvested = invested;
+        portfolioTotalPnL = value - invested;
     }
 
     function processSingleData(json, fallbackSymbol) {
@@ -366,6 +604,9 @@ PlasmoidItem {
     }
 
     onSingleTickerChanged: refreshData()
+    onShowPortfolioModeChanged: refreshData()
+    onPortfolioDataChanged: refreshData()
+    onBaseCurrencyChanged: { fxRateCache = ({}); if (root.showPortfolioMode) refreshData(); }
     onIsMultiModeChanged: {
         stockModel.clear();
         if (!isMultiMode) {
@@ -497,12 +738,20 @@ PlasmoidItem {
     // --- DESKTOP VIEW (Full Representation) ---
 
     fullRepresentation: Item {
-        Layout.minimumWidth: root.showTwoList ? 380 : 190 // Leave room for both columns in multi mode
+        Layout.minimumWidth: root.showPortfolioMode ? 420 : (root.showTwoList ? 380 : 190) // Leave room for both columns in multi mode
         Layout.minimumHeight: 170
         // Layout.preferredWidth: 260
         // Layout.preferredHeight: 300
 
+        PortfolioView {
+            visible: root.showPortfolioMode
+            anchors.fill: parent
+            rootItem: root
+            listModel: portfolioModel
+        }
+
         RowLayout {
+            visible: !root.showPortfolioMode
             anchors.fill: parent
             anchors.margins: 10
             spacing: 10

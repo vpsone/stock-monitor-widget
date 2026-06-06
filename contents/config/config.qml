@@ -13,11 +13,6 @@ ConfigModel {
         source: "configSearch.qml"
     }
     ConfigCategory {
-        name: "Panel view"
-        icon: "view-list-details"
-        source: "configPanel.qml"
-    }
-    ConfigCategory {
         name: "Portfolio Tracking(WIP)"
         icon: "office-chart-line"
         source: "configPortfolio.qml"
