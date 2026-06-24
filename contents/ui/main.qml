@@ -237,7 +237,7 @@ PlasmoidItem {
             root.chartDataPoints = cleanData;
 
             if (root.chartRange === "1D") {
-                root.previousClose = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
+                root.previousClose = meta.chartPreviousClose || meta.regularMarketPreviousClose || meta.previousClose;
             } else {
                 root.previousClose = meta.chartPreviousClose;
                 if (!root.previousClose || root.previousClose === 0) {
@@ -302,7 +302,7 @@ PlasmoidItem {
 
             var prev;
             if (root.chartRange === "1D") {
-                prev = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
+                prev = meta.chartPreviousClose || meta.regularMarketPreviousClose || meta.previousClose;
             } else {
                 prev = meta.chartPreviousClose;
                 if (!prev || prev === 0) {
