@@ -1,19 +1,17 @@
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Controls
-import org.kde.plasma.plasmoid
-import org.kde.plasma.core as PlasmaCore
+import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasmoid
 
 PlasmoidItem {
     id: root
 
     // --- CONFIGURATION ---
-    Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+    Plasmoid.backgroundHints: root.isPlasmaTheme ? PlasmaCore.Types.DefaultBackground | PlasmaCore.Types.ConfigurableBackground : PlasmaCore.Types.NoBackground
     // Detect where we are (Panel vs Desktop) to switch views
-    preferredRepresentation: (Plasmoid.formFactor === PlasmaCore.Types.Horizontal || Plasmoid.formFactor === PlasmaCore.Types.Vertical)
-    ? Plasmoid.CompactRepresentation
-    : Plasmoid.FullRepresentation
+    preferredRepresentation: (Plasmoid.formFactor === PlasmaCore.Types.Horizontal || Plasmoid.formFactor === PlasmaCore.Types.Vertical) ? root.compactRepresentation : root.fullRepresentation
 
     property string singleTicker: Plasmoid.configuration.ticker
     property bool isMultiMode: Plasmoid.configuration.isMultiMode
@@ -24,7 +22,6 @@ PlasmoidItem {
     property bool sortAlphabetically: Plasmoid.configuration.sortAlphabetically
     property bool swapNameAndTicker: Plasmoid.configuration.swapNameAndTicker
     property string chartRange: Plasmoid.configuration.chartRange
-
     // Time Limits Config
     property bool limitHours: Plasmoid.configuration.limitHours
     property bool skipWeekendRefresh: Plasmoid.configuration.skipWeekendRefresh
@@ -32,24 +29,24 @@ PlasmoidItem {
     property int startMinute: Plasmoid.configuration.startMinute
     property int endHour: Plasmoid.configuration.endHour
     property int endMinute: Plasmoid.configuration.endMinute
-
     // Internal Properties for Single View
     property string singleCompanyName: "Loading..."
     property string currentPrice: "---"
-    property double currentRawPrice: 0.0
+    property double currentRawPrice: 0
     property string priceChange: "+0.00"
     property string percentChange: "+0.00%"
     property var chartDataPoints: []
-    property double previousClose: 0.0
+    property double previousClose: 0
     property bool isPositive: true
     property string currencySym: ""
-
-    property bool isLightTheme: Plasmoid.configuration.isLightTheme
+    property bool isLightTheme: Plasmoid.configuration.selectedTheme === 0
+    property bool isDarkTheme: Plasmoid.configuration.selectedTheme === 1
+    property bool isPlasmaTheme: Plasmoid.configuration.selectedTheme === 2
     property color positiveColor: Plasmoid.configuration.positiveColor
     property color negativeColor: Plasmoid.configuration.negativeColor
-    property color tickerColor: Qt.colorEqual(Plasmoid.configuration.tickerColor, "#ffffff") && isLightTheme ? "#000000" : Plasmoid.configuration.tickerColor
+    property color tickerColor: getThemeColor("ticker")
     property int tickerOpacity: Plasmoid.configuration.tickerOpacity
-    property color priceColor: Qt.colorEqual(Plasmoid.configuration.priceColor, "#ffffff") && isLightTheme ? "#000000" : Plasmoid.configuration.priceColor
+    property color priceColor: getThemeColor("price")
     property int priceOpacity: Plasmoid.configuration.priceOpacity
     property int bgOpacity: Plasmoid.configuration.bgOpacity
     property bool hideChangePercentage: Plasmoid.configuration.hideChangePercentage
@@ -58,19 +55,70 @@ PlasmoidItem {
     property bool hideDecimals: Plasmoid.configuration.hideDecimals
     property string lastUpdated: ""
     property string nextUpdate: ""
-    property color bgColor: isLightTheme ? "#ffffff" : "#1a1a1a"
-    property color chartBaseColor: isLightTheme ? "#e0e0e0" : "#333333"
-    property color secondaryTextColor: isLightTheme ? "#555555" : "#888888"
+    property color bgColor: getThemeColor("background")
+    property color chartBaseColor: getThemeColor("chart")
+    property color secondaryTextColor: getThemeColor("text")
 
-    ListModel { id: stockModel }
+    function getThemeColor(what) {
+        if (what === "ticker") {
+            if (isPlasmaTheme)
+                return Kirigami.Theme.textColor;
+
+            return Qt.colorEqual(Plasmoid.configuration.tickerColor, "#ffffff") && isLightTheme ? "#000000" : Plasmoid.configuration.tickerColor;
+        } else if (what === "price") {
+            if (isPlasmaTheme)
+                return Kirigami.Theme.textColor;
+
+            return Qt.colorEqual(Plasmoid.configuration.priceColor, "#ffffff") && isLightTheme ? "#000000" : Plasmoid.configuration.priceColor;
+        } else if (what === "background") {
+            let color = undefined;
+            if (isLightTheme)
+                color = "#ffffff";
+            else if (isDarkTheme)
+                color = "#1a1a1a";
+            if (isLightTheme || isDarkTheme) {
+                const c = Qt.color(color);
+                return Qt.rgba(c.r, c.g, c.b, bgOpacity / 100);
+            }
+            return "transparent";
+        } else if (what === "chart") {
+            if (isLightTheme)
+                return "#e0e0e0";
+            else if (isDarkTheme)
+                return "#333333";
+            return Kirigami.Theme.disabledTextColor;
+        } else if (what === "text") {
+            if (isLightTheme)
+                return "#555555";
+            else if (isDarkTheme)
+                return "#888888";
+            return Kirigami.Theme.disabledTextColor;
+        }
+        return "";
+    }
+
+    function getColor(color) {
+        if (isLightTheme) {
+            return "#ffffff";
+        } else if (isDarkTheme) {
+        }
+    }
 
     function getCurrencySymbol(code) {
         // Fix: Return empty string if code is missing or literal "null"
-        if (!code || code === "null") return "";
+        if (!code || code === "null")
+            return "";
 
         const symbols = {
-            "USD": "$", "EUR": "€", "GBP": "£", "INR": "₹", "JPY": "¥",
-            "CNY": "¥", "KRW": "₩", "RUB": "₽", "TRY": "₺"
+            "USD": "$",
+            "EUR": "€",
+            "GBP": "£",
+            "INR": "₹",
+            "JPY": "¥",
+            "CNY": "¥",
+            "KRW": "₩",
+            "RUB": "₽",
+            "TRY": "₺"
         };
         return symbols[code] || code + " ";
     }
@@ -388,6 +436,8 @@ PlasmoidItem {
     // --- CUSTOM TOOLTIP ---
     // Tooltip removed due to compatibility issues across some Plasma 6 versions
 
+    ListModel { id: stockModel }
+
     Timer {
         interval: Plasmoid.configuration.refreshInterval * 60000
         running: true
@@ -504,14 +554,16 @@ PlasmoidItem {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 10
-            spacing: 10
+            anchors.margins: root.isPlasmaTheme ? 0 : 10
+            spacing: root.isPlasmaTheme ? 0 : 10
+
             SingleStockView {
-                visible: !root.isMultiMode || root.showTwoList 
+                visible: !root.isMultiMode || root.showTwoList
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 rootItem: root
             }
+
             MultiStockView {
                 visible: root.isMultiMode
                 Layout.fillWidth: true

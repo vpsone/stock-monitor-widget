@@ -4,11 +4,12 @@ import org.kde.kirigami as Kirigami
 
 Rectangle {
     id: multiStockRoot
+
     property var rootItem
     property var listModel
 
-    color: Qt.rgba(rootItem.bgColor.r, rootItem.bgColor.g, rootItem.bgColor.b, rootItem.bgOpacity / 100.0)
-    radius: 22
+    color: rootItem.bgColor
+    radius: rootItem.isPlasmaTheme ? 0 : 22
     clip: true
 
     Text {

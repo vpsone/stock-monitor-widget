@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 Item {
     id: page
 
-    property alias cfg_isLightTheme: lightThemeSwitch.checked
+    property alias cfg_selectedTheme: themeCombo.currentIndex
     property alias cfg_positiveColor: posColorButton.text
     property alias cfg_negativeColor: negColorButton.text
     property alias cfg_bgOpacity: bgOpacitySlider.value
@@ -24,10 +24,11 @@ Item {
         Kirigami.FormLayout {
             width: parent.availableWidth
 
-            Switch {
-                id: lightThemeSwitch
+            ComboBox {
+                id: themeCombo
+
                 Kirigami.FormData.label: "Theme:"
-                text: "Use Light Theme"
+                model: ["Light", "Dark", "Plasma"]
             }
 
             TextField {
@@ -44,16 +45,21 @@ Item {
 
             RowLayout {
                 Kirigami.FormData.label: "Background Opacity:"
+                visible: themeCombo.currentIndex !== 2
+
                 Slider {
                     id: bgOpacitySlider
+
                     from: 0
                     to: 100
                     stepSize: 1
                     Layout.fillWidth: true
                 }
+
                 Label {
                     text: bgOpacitySlider.value + "%"
                 }
+
             }
 
             Item {
@@ -63,22 +69,27 @@ Item {
 
             TextField {
                 id: tickerColorButton
+
                 Kirigami.FormData.label: "Color (Hex):"
                 placeholderText: "#FFFFFF"
             }
 
             RowLayout {
                 Kirigami.FormData.label: "Opacity:"
+
                 Slider {
                     id: tickerOpacitySlider
+
                     from: 0
                     to: 100
                     stepSize: 1
                     Layout.fillWidth: true
                 }
+
                 Label {
                     text: tickerOpacitySlider.value + "%"
                 }
+
             }
 
             Item {
@@ -88,23 +99,31 @@ Item {
 
             TextField {
                 id: priceColorButton
+
                 Kirigami.FormData.label: "Color (Hex):"
                 placeholderText: "#FFFFFF"
             }
 
             RowLayout {
                 Kirigami.FormData.label: "Opacity:"
+
                 Slider {
                     id: priceOpacitySlider
+
                     from: 0
                     to: 100
                     stepSize: 1
                     Layout.fillWidth: true
                 }
+
                 Label {
                     text: priceOpacitySlider.value + "%"
                 }
+
             }
+
         }
+
     }
+
 }
