@@ -554,7 +554,7 @@ PlasmoidItem {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: root.isPlasmaTheme ? 0 : 10
+            anchors.margins: 0
             spacing: root.isPlasmaTheme ? 0 : 10
 
             SingleStockView {
