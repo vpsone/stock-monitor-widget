@@ -5,9 +5,9 @@
       http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
     <kcfgfile name=""/>
     <group name="General">
-        <entry name="isLightTheme" type="Bool">
-            <label>Use Light Theme</label>
-            <default>false</default>
+        <entry name="selectedTheme" type="Int">
+            <label>Theme</label>
+            <default>1</default>
         </entry>
         <entry name="ticker" type="String">
             <label>Single Stock Ticker</label>
@@ -107,7 +107,7 @@
             <label>Hide decimals in stock price</label>
             <default>false</default>
         </entry>
-        
+
         <!-- Portfolio Tracking -->
         <entry name="portfolioData" type="String">
             <label>Portfolio holdings data (JSON)</label>
