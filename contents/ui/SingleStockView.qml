@@ -139,6 +139,27 @@ Rectangle {
 
                 Behavior on opacity { NumberAnimation { duration: 150 } }
             }
+            // One line per purchased lot: each lot's own (fixed) purchase price compared
+            // against the live current price, independently of the others.
+            ColumnLayout {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 2
+                spacing: 1
+                visible: rootItem.showPortfolioMode && rootItem.hasPortfolioEntry
+
+                Repeater {
+                    model: rootItem.portfolioLots
+                    delegate: Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: modelData.shares + " @ " + rootItem.currencySym + modelData.avgCost.toFixed(2)
+                              + "  →  " + rootItem.formatNumber(modelData.plValue, true)
+                              + " (" + rootItem.formatNumber(modelData.plPercent, true) + "%)"
+                        color: modelData.plIsPos ? rootItem.positiveColor : rootItem.negativeColor
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+                }
+            }
         }
     }
 
