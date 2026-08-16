@@ -53,6 +53,13 @@ PlasmoidItem {
     property bool hideTimestamps: Plasmoid.configuration.hideTimestamps
     property bool formatPrices: Plasmoid.configuration.formatPrices
     property bool hideDecimals: Plasmoid.configuration.hideDecimals
+    // Portfolio Tracking (purchase price vs current price). Each purchase is its own lot
+    // (same ticker can have several, bought at different prices) and is shown individually,
+    // each one's static purchase price compared against the live current price.
+    property bool showPortfolioMode: Plasmoid.configuration.showPortfolioMode
+    property string portfolioData: Plasmoid.configuration.portfolioData
+    property var portfolioLots: root.getPortfolioLots(root.singleTicker, root.portfolioData, root.currentRawPrice)
+    property bool hasPortfolioEntry: root.portfolioLots.length > 0
     property string lastUpdated: ""
     property string nextUpdate: ""
     property color bgColor: getThemeColor("background")
@@ -121,6 +128,33 @@ PlasmoidItem {
             "TRY": "₺"
         };
         return symbols[code] || code + " ";
+    }
+
+    // --- PORTFOLIO TRACKING HELPERS ---
+    // A ticker can have several saved lots (bought at different times/prices). Each lot's
+    // purchase price is fixed; only the live price moves, so every lot is compared against
+    // it individually rather than blended into one average.
+    function getPortfolioLots(ticker, dataStr, rawPrice) {
+        if (!ticker || !dataStr || !rawPrice) return [];
+        try {
+            var portfolio = JSON.parse(dataStr);
+            var upperTicker = ticker.trim().toUpperCase();
+            var lots = [];
+            for (var i = 0; i < portfolio.length; i++) {
+                if (portfolio[i].ticker === upperTicker) {
+                    var shares = Number(portfolio[i].shares) || 0;
+                    var cost = Number(portfolio[i].averageCost) || 0;
+                    if (shares <= 0) continue;
+                    var plValue = (rawPrice - cost) * shares;
+                    var plPercent = cost > 0 ? ((rawPrice - cost) / cost) * 100 : 0;
+                    lots.push({ shares: shares, avgCost: cost, plValue: plValue, plPercent: plPercent, plIsPos: plValue >= 0 });
+                }
+            }
+            return lots;
+        } catch (e) {
+            console.log("Error parsing portfolio data: " + e);
+        }
+        return [];
     }
 
     // --- NEW HELPER: GET API PARAMETERS BASED ON CONFIG ---
@@ -222,7 +256,9 @@ PlasmoidItem {
                     "pct": "",
                     "isPos": true,
                     "chartPoints": [],
-                    "prevClose": 0.0
+                    "prevClose": 0.0,
+                    "currentRaw": 0.0,
+                    "currencySym": ""
                 });
             });
         }
@@ -369,7 +405,9 @@ PlasmoidItem {
                 "pct": formatNumber(pct, true) + "%",
                 "isPos": change >= 0,
                 "chartPoints": cleanData,
-                "prevClose": prev
+                "prevClose": prev,
+                "currentRaw": current,
+                "currencySym": curSym
             };
 
             var found = false;
@@ -432,6 +470,9 @@ PlasmoidItem {
     onHideDecimalsChanged: refreshData()
     // CHANGED: Update when range changes
     onChartRangeChanged: { stockModel.clear(); refreshData(); }
+    // Note: no explicit handler needed when portfolioData changes — both the single-ticker
+    // view and the multi-stock list compute their lot P/L directly from root.portfolioData
+    // in their bindings, so QML re-evaluates them automatically.
 
     // --- CUSTOM TOOLTIP ---
     // Tooltip removed due to compatibility issues across some Plasma 6 versions

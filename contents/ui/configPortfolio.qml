@@ -9,16 +9,12 @@ Item {
     property alias cfg_showPortfolioMode: portfolioModeSwitch.checked
     property string cfg_portfolioData
 
-    function formatPortfolioList(portfolio) {
-        if (!portfolio || portfolio.length === 0) {
-            return "No holdings added yet.";
-        }
-        var displayStr = "Current Holdings:\n";
-        for (var i = 0; i < portfolio.length; i++) {
-            displayStr += "• " + portfolio[i].ticker + ": " + portfolio[i].shares + " shares @ " + portfolio[i].averageCost.toFixed(2) + "\n";
-        }
-        return displayStr;
-    }
+    // Every purchase is kept as its own lot (same ticker can appear more than once, e.g.
+    // bought at different prices on different dates). The widget shows each lot's own
+    // profit/loss separately rather than blending them into one average.
+    property var portfolioList: []
+
+    Component.onCompleted: page.refreshPortfolioList()
 
     function safeParsePortfolio(data) {
         if (!data) return [];
@@ -30,6 +26,29 @@ Item {
         }
     }
 
+    // Parses a price typed with either "." or "," as the decimal separator, regardless of
+    // the system locale (avoids the DoubleValidator/parseFloat locale mismatch where a
+    // locale using "," for decimals gets silently truncated by JS's locale-independent parseFloat).
+    function parseLocaleNumber(text) {
+        if (!text) return NaN;
+        var str = String(text).trim();
+        var lastComma = str.lastIndexOf(",");
+        var lastDot = str.lastIndexOf(".");
+        if (lastComma !== -1 && lastDot !== -1) {
+            // Both separators present: whichever comes last is the decimal separator,
+            // the other one is a thousands grouping separator to strip.
+            if (lastComma > lastDot) {
+                str = str.replace(/\./g, "").replace(",", ".");
+            } else {
+                str = str.replace(/,/g, "");
+            }
+        } else if (lastComma !== -1) {
+            // Only a comma: treat it as the decimal separator (e.g. "50,21")
+            str = str.replace(",", ".");
+        }
+        return parseFloat(str);
+    }
+
     function escapeCsvField(val) {
         var str = String(val);
         if (str.indexOf(",") >= 0 || str.indexOf("\"") >= 0 || str.indexOf("\n") >= 0) {
@@ -38,121 +57,160 @@ Item {
         return str;
     }
 
+    function refreshPortfolioList() {
+        page.portfolioList = page.safeParsePortfolio(page.cfg_portfolioData);
+    }
+
+    function addLot() {
+        if (portfolioTickerField.text.trim() === "" || portfolioSharesSpin.value <= 0) return;
+        var portfolio = page.safeParsePortfolio(page.cfg_portfolioData);
+        portfolio.push({
+            ticker: portfolioTickerField.text.trim().toUpperCase(),
+            shares: portfolioSharesSpin.value,
+            averageCost: page.parseLocaleNumber(portfolioCostField.text) || 0,
+            addedDate: new Date().toISOString()
+        });
+        page.cfg_portfolioData = JSON.stringify(portfolio);
+        page.refreshPortfolioList();
+        portfolioTickerField.text = "";
+        portfolioSharesSpin.value = 0;
+        portfolioCostField.text = "";
+    }
+
+    // Removes a single lot by its position in portfolioList (not by ticker, since a ticker
+    // can have several lots).
+    function removeLot(index) {
+        var portfolio = page.safeParsePortfolio(page.cfg_portfolioData);
+        portfolio.splice(index, 1);
+        page.cfg_portfolioData = JSON.stringify(portfolio);
+        page.refreshPortfolioList();
+    }
+
     ScrollView {
         anchors.fill: parent
         anchors.margins: 20
         contentWidth: availableWidth
         clip: true
 
-        Kirigami.FormLayout {
+        ColumnLayout {
             width: parent.availableWidth
+            spacing: Kirigami.Units.largeSpacing
 
-            CheckBox {
-                id: portfolioModeSwitch
-                Kirigami.FormData.label: "Portfolio Mode:"
-                text: "Show profit/loss calculations"
-            }
+            Kirigami.FormLayout {
+                Layout.fillWidth: true
 
-            TextField {
-                id: portfolioTickerField
-                Kirigami.FormData.label: "Ticker:"
-                placeholderText: "e.g., AAPL"
-                Layout.preferredWidth: 120
-            }
+                CheckBox {
+                    id: portfolioModeSwitch
+                    Kirigami.FormData.label: "Portfolio Mode:"
+                    text: "Show profit/loss calculations"
+                }
 
-            SpinBox {
-                id: portfolioSharesSpin
-                Kirigami.FormData.label: "Shares:"
-                from: 0
-                to: 999999
-                editable: true
-            }
+                TextField {
+                    id: portfolioTickerField
+                    Kirigami.FormData.label: "Ticker:"
+                    placeholderText: "e.g., AAPL"
+                    Layout.preferredWidth: 120
+                }
 
-            TextField {
-                id: portfolioCostField
-                Kirigami.FormData.label: "Average Cost:"
-                placeholderText: "0.00"
-                validator: DoubleValidator { bottom: 0; decimals: 2 }
-            }
+                SpinBox {
+                    id: portfolioSharesSpin
+                    Kirigami.FormData.label: "Shares:"
+                    from: 0
+                    to: 999999
+                    editable: true
+                }
 
-            RowLayout {
-                spacing: Kirigami.Units.smallSpacing
-                Kirigami.FormData.label: "Actions:"
+                TextField {
+                    id: portfolioCostField
+                    Kirigami.FormData.label: "Average Cost:"
+                    placeholderText: "0.00"
+                    // Plain digits + a single "." or "," decimal separator. Deliberately not a
+                    // DoubleValidator: on locales where "," is the decimal separator (e.g. es_AR),
+                    // DoubleValidator treats "." as a thousands separator and rewrites the field
+                    // into locale-formatted scientific notation (e.g. "50.21" -> "5,02E+03") on
+                    // focus loss, which then gets mis-parsed. See page.parseLocaleNumber().
+                    validator: RegularExpressionValidator { regularExpression: /^\d*[.,]?\d*$/ }
+                }
 
-                Button {
-                    text: "Add/Update"
-                    onClicked: {
-                        if (portfolioTickerField.text.trim() !== "" && portfolioSharesSpin.value > 0) {
-                            var portfolio = page.safeParsePortfolio(page.cfg_portfolioData);
-                            var ticker = portfolioTickerField.text.trim().toUpperCase();
-                            var found = false;
-                            for (var i = 0; i < portfolio.length; i++) {
-                                if (portfolio[i].ticker === ticker) {
-                                    portfolio[i].shares = portfolioSharesSpin.value;
-                                    portfolio[i].averageCost = parseFloat(portfolioCostField.text) || 0;
-                                    portfolio[i].lastModifiedDate = new Date().toISOString();
-                                    found = true;
-                                    break;
-                                }
+                RowLayout {
+                    spacing: Kirigami.Units.smallSpacing
+                    Kirigami.FormData.label: "Actions:"
+
+                    Button {
+                        text: "Add Lot"
+                        onClicked: page.addLot()
+                    }
+
+                    Button {
+                        text: "Export CSV"
+                        onClicked: {
+                            if (page.portfolioList.length === 0) {
+                                csvOutput.text = "No portfolio data to export.";
+                                return;
                             }
-                            if (!found) {
-                                portfolio.push({
-                                    ticker: ticker,
-                                    shares: portfolioSharesSpin.value,
-                                    averageCost: parseFloat(portfolioCostField.text) || 0,
-                                    addedDate: new Date().toISOString()
-                                });
+                            var csv = "Ticker,Shares,Average Cost,Added Date\n";
+                            for (var i = 0; i < page.portfolioList.length; i++) {
+                                var lot = page.portfolioList[i];
+                                csv += page.escapeCsvField(lot.ticker) + "," + page.escapeCsvField(lot.shares) + "," + page.escapeCsvField(lot.averageCost) + "," + page.escapeCsvField(lot.addedDate) + "\n";
                             }
-                            page.cfg_portfolioData = JSON.stringify(portfolio);
-                            portfolioListText.text = page.formatPortfolioList(portfolio);
-                            portfolioTickerField.text = "";
-                            portfolioSharesSpin.value = 0;
-                            portfolioCostField.text = "";
+                            csvOutput.text = csv;
                         }
                     }
                 }
 
-                Button {
-                    text: "Remove"
-                    onClicked: {
-                        if (portfolioTickerField.text.trim() !== "") {
-                            var portfolio = page.safeParsePortfolio(page.cfg_portfolioData);
-                            var ticker = portfolioTickerField.text.trim().toUpperCase();
-                            portfolio = portfolio.filter(function(item) { return item.ticker !== ticker; });
-                            page.cfg_portfolioData = JSON.stringify(portfolio);
-                            portfolioListText.text = page.formatPortfolioList(portfolio);
-                        }
-                    }
+                Label {
+                    text: "Each purchase is its own lot — buying more of the same ticker at a different price adds a new lot instead of overwriting the old one."
+                    font.pixelSize: 10
+                    font.italic: true
+                    opacity: 0.7
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 300
                 }
+            }
 
-                Button {
-                    text: "Export CSV"
-                    onClicked: {
-                        var portfolio = page.safeParsePortfolio(page.cfg_portfolioData);
-                        if (portfolio.length === 0) {
-                            portfolioListText.text = "No portfolio data to export.";
-                            return;
-                        }
-                        var csv = "Ticker,Shares,Average Cost,Added Date\n";
-                        for (var i = 0; i < portfolio.length; i++) {
-                            csv += page.escapeCsvField(portfolio[i].ticker) + "," + page.escapeCsvField(portfolio[i].shares) + "," + page.escapeCsvField(portfolio[i].averageCost) + "," + page.escapeCsvField(portfolio[i].addedDate) + "\n";
-                        }
-                        portfolioListText.text = "CSV Content (copy manually):\n" + csv;
+            Kirigami.Separator { Layout.fillWidth: true }
+
+            Label {
+                text: "Your Lots"
+                font.bold: true
+                Layout.fillWidth: true
+            }
+
+            Label {
+                visible: page.portfolioList.length === 0
+                text: "No holdings added yet."
+                opacity: 0.7
+                font.pixelSize: 11
+            }
+
+            Repeater {
+                model: page.portfolioList
+                delegate: RowLayout {
+                    Layout.fillWidth: true
+                    Label {
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
+                        font.pixelSize: 11
+                        text: modelData.ticker + ":  " + modelData.shares + " shares @ $" + Number(modelData.averageCost).toFixed(2)
+                              + (modelData.addedDate ? "   (" + Qt.formatDateTime(new Date(modelData.addedDate), "dd MMM yyyy") + ")" : "")
+                    }
+                    Button {
+                        text: "Remove"
+                        onClicked: page.removeLot(index)
                     }
                 }
             }
 
             Label {
-                id: portfolioListText
+                id: csvOutput
                 text: ""
-                font.pixelSize: 11
+                font.pixelSize: 10
+                font.family: "monospace"
                 color: Kirigami.Theme.neutralTextColor
                 wrapMode: Text.WordWrap
+                visible: text !== ""
                 Layout.fillWidth: true
-                Component.onCompleted: {
-                    var portfolio = page.safeParsePortfolio(page.cfg_portfolioData);
-                    text = page.formatPortfolioList(portfolio);
-                }
             }
         }
     }
