@@ -39,7 +39,6 @@ Rectangle {
                     rootItem.refreshData();
                     timerFullFlicker.restart();
                 } else {
-                    console.log("Opening URL: " + rootItem.singleTicker);
                     Qt.openUrlExternally("https://finance.yahoo.com/quote/" + rootItem.singleTicker);
                 }   
             }

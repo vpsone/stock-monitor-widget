@@ -58,7 +58,6 @@ Rectangle {
                         rootItem.refreshData();
                         timerListFlicker.restart();
                     } else if (mouse.button === Qt.LeftButton) {
-                        console.log("Opening URL: " + model.ticker);
                         Qt.openUrlExternally("https://finance.yahoo.com/quote/" + model.ticker);
                     } else if (mouse.button === Qt.RightButton) {
                         rootItem.manualPanelTickerOverride = model.ticker;
