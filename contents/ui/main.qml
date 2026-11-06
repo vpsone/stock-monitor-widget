@@ -53,6 +53,7 @@ PlasmoidItem {
     property bool hideTimestamps: Plasmoid.configuration.hideTimestamps
     property bool formatPrices: Plasmoid.configuration.formatPrices
     property bool hideDecimals: Plasmoid.configuration.hideDecimals
+    property bool showChartAxis: Plasmoid.configuration.showChartAxis
     // Portfolio Tracking (purchase price vs current price). Each purchase is its own lot
     // (same ticker can have several, bought at different prices) and is shown individually,
     // each one's static purchase price compared against the live current price.

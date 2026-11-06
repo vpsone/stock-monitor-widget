@@ -14,6 +14,7 @@ Item {
     property alias cfg_tickerOpacity: tickerOpacitySlider.value
     property alias cfg_priceColor: priceColorButton.text
     property alias cfg_priceOpacity: priceOpacitySlider.value
+    property alias cfg_showChartAxis: showAxisSwitch.checked
 
     ScrollView {
         anchors.fill: parent
@@ -120,6 +121,18 @@ Item {
                     text: priceOpacitySlider.value + "%"
                 }
 
+            }
+
+            Item {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: "Chart"
+            }
+
+            CheckBox {
+                id: showAxisSwitch
+
+                Kirigami.FormData.label: "Price scale:"
+                text: "Show price values on the left of the chart"
             }
 
         }
