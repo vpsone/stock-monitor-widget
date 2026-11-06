@@ -85,11 +85,18 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 60
                     spacing: 10
+                    // The two lines are separate RowLayouts, so each one sizes on its own:
+                    // the wide change badge on the second line must not take width away from
+                    // the name on the first line (they used to share two columns).
                     ColumnLayout {
-                        Layout.preferredWidth: parent.width * 0.35
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         Layout.alignment: Qt.AlignVCenter
                         spacing: 2
+
+                        // Line 1: arrow, name (elided when too long), price.
                         RowLayout {
+                            Layout.fillWidth: true
                             spacing: 4
                             Text {
                                 text: model.isPos ? "▲" : "▼"
@@ -101,46 +108,53 @@ Rectangle {
                                 color: rootItem.tickerColor
                                 opacity: rootItem.tickerOpacity / 100.0
                                 font.pixelSize: 14
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                                // Keep a small gap so the name elides just before touching the price.
+                                Layout.rightMargin: 6
+                            }
+                            Text {
+                                text: model.price
+                                color: rootItem.priceColor
+                                opacity: rootItem.priceOpacity / 100.0
+                                font.pixelSize: 14
+                                Layout.alignment: Qt.AlignRight
+                                Layout.minimumWidth: implicitWidth
                             }
                         }
-                        Text {
-                            text: rootItem.swapNameAndTicker ? model.ticker : model.name
-                            color: rootItem.secondaryTextColor
-                            font.pixelSize: 10
-                            elide: Text.ElideRight
+
+                        // Line 2: secondary text (elided when too long), change badge.
+                        RowLayout {
                             Layout.fillWidth: true
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        spacing: 2
-                        Text {
-                            text: model.price
-                            color: rootItem.priceColor
-                            opacity: rootItem.priceOpacity / 100.0
-                            font.pixelSize: 14
-                            Layout.alignment: Qt.AlignRight
-                        }
-                        Rectangle {
-                            radius: 4
-                            // Background: translucent tint of the color for theme independence
-                            color: model.isPos
-                                ? Qt.rgba(rootItem.positiveColor.r, rootItem.positiveColor.g, rootItem.positiveColor.b, 0.15)
-                                : Qt.rgba(rootItem.negativeColor.r, rootItem.negativeColor.g, rootItem.negativeColor.b, 0.15)
-                            border.color: model.isPos ? rootItem.positiveColor : rootItem.negativeColor
-                            border.width: 1
-                            Layout.preferredWidth: pctTextL.implicitWidth + (Kirigami.Units.smallSpacing * 2)
-                            Layout.preferredHeight: pctTextL.implicitHeight + (Kirigami.Units.smallSpacing / 2)
-                            Layout.alignment: Qt.AlignRight
-
+                            spacing: 4
                             Text {
-                                id: pctTextL
-                                anchors.centerIn: parent
-                                text: model.change + " (" + model.pct + ")"
-                                color: model.isPos ? rootItem.positiveColor : rootItem.negativeColor
-                                font.pixelSize: 11
-                                font.weight: Font.Black
+                                text: rootItem.swapNameAndTicker ? model.ticker : model.name
+                                color: rootItem.secondaryTextColor
+                                font.pixelSize: 10
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                            Rectangle {
+                                radius: 4
+                                // Background: translucent tint of the color for theme independence
+                                color: model.isPos
+                                    ? Qt.rgba(rootItem.positiveColor.r, rootItem.positiveColor.g, rootItem.positiveColor.b, 0.15)
+                                    : Qt.rgba(rootItem.negativeColor.r, rootItem.negativeColor.g, rootItem.negativeColor.b, 0.15)
+                                border.color: model.isPos ? rootItem.positiveColor : rootItem.negativeColor
+                                border.width: 1
+                                Layout.preferredWidth: pctTextL.implicitWidth + (Kirigami.Units.smallSpacing * 2)
+                                Layout.minimumWidth: Layout.preferredWidth
+                                Layout.preferredHeight: pctTextL.implicitHeight + (Kirigami.Units.smallSpacing / 2)
+                                Layout.alignment: Qt.AlignRight
+
+                                Text {
+                                    id: pctTextL
+                                    anchors.centerIn: parent
+                                    text: model.change + " (" + model.pct + ")"
+                                    color: model.isPos ? rootItem.positiveColor : rootItem.negativeColor
+                                    font.pixelSize: 11
+                                    font.weight: Font.Black
+                                }
                             }
                         }
                     }
