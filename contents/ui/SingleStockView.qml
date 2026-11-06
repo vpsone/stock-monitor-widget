@@ -125,8 +125,12 @@ Rectangle {
                     visible: rootItem.chartDataPoints && rootItem.chartDataPoints.length > 0
                     renderStrategy: Canvas.Threaded
                     renderTarget: Canvas.Image
-                    onPaint: { drawChart(getContext("2d"), width, height, rootItem.chartDataPoints, rootItem.previousClose, rootItem.isPositive, true); }
-                    Connections { target: rootItem; function onChartDataPointsChanged() { singleCanvas.requestPaint(); } }
+                    onPaint: { drawChart(getContext("2d"), width, height, rootItem.chartDataPoints, rootItem.previousClose, rootItem.isPositive, true, rootItem.showChartAxis); }
+                    Connections {
+                        target: rootItem
+                        function onChartDataPointsChanged() { singleCanvas.requestPaint(); }
+                        function onShowChartAxisChanged() { singleCanvas.requestPaint(); }
+                    }
                 }
             }
             Text {
@@ -163,7 +167,47 @@ Rectangle {
         }
     }
 
-    function drawChart(ctx, w, h, data, prevClose, isPos, drawBackground) {
+    // Draws a price scale on the left: faint horizontal grid lines at round
+    // values with their labels. Returns the width reserved for the labels, so
+    // the caller can start the plot to the right of it.
+    function drawAxis(ctx, w, h, minVal, maxVal, getY) {
+        var range = maxVal - minVal;
+        var rawStep = range / 4;
+        var mag = Math.pow(10, Math.floor(Math.log(rawStep) / Math.LN10));
+        var norm = rawStep / mag;
+        var step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+
+        var ticks = [];
+        for (var v = Math.ceil(minVal / step) * step; v <= maxVal; v += step) {
+            ticks.push(v);
+        }
+
+        ctx.font = "10px sans-serif";
+        ctx.textBaseline = "middle";
+        var labelW = 0;
+        var labels = [];
+        for (var i = 0; i < ticks.length; i++) {
+            var text = rootItem.formatNumber(ticks[i], false);
+            labels.push(text);
+            labelW = Math.max(labelW, ctx.measureText(text).width);
+        }
+        var plotX = Math.ceil(labelW) + 8;
+
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = rootItem.chartBaseColor;
+        ctx.fillStyle = rootItem.secondaryTextColor;
+        for (var j = 0; j < ticks.length; j++) {
+            var y = Math.round(getY(ticks[j])) + 0.5;
+            ctx.beginPath();
+            ctx.moveTo(plotX, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+            ctx.fillText(labels[j], 0, y);
+        }
+        return plotX;
+    }
+
+    function drawChart(ctx, w, h, data, prevClose, isPos, drawBackground, showAxis) {
         ctx.clearRect(0, 0, w, h);
         if (!data || data.length < 2) return;
         var minVal = Math.min(...data);
@@ -176,23 +220,27 @@ Rectangle {
         range = maxVal - minVal;
         function getY(val) { return h - ((val - minVal) / range * h); }
 
+        // Left edge of the plot; moves right when the price scale is shown.
+        var plotX = 0;
+        if (drawBackground && showAxis) plotX = drawAxis(ctx, w, h, minVal, maxVal, getY);
+
         if (drawBackground) {
             var prevY = getY(prevClose);
             ctx.beginPath();
             ctx.strokeStyle = rootItem.chartBaseColor;
             ctx.lineWidth = 1;
             ctx.setLineDash([4, 4]);
-            ctx.moveTo(0, prevY);
+            ctx.moveTo(plotX, prevY);
             ctx.lineTo(w, prevY);
             ctx.stroke();
             ctx.setLineDash([]);
         }
 
         ctx.beginPath();
-        var stepX = w / (data.length - 1);
-        ctx.moveTo(0, getY(data[0]));
+        var stepX = (w - plotX) / (data.length - 1);
+        ctx.moveTo(plotX, getY(data[0]));
         for (var i = 1; i < data.length; i++) {
-            ctx.lineTo(i * stepX, getY(data[i]));
+            ctx.lineTo(plotX + i * stepX, getY(data[i]));
         }
 
         ctx.lineJoin = "round";
@@ -202,7 +250,7 @@ Rectangle {
 
         if (drawBackground) {
             ctx.lineTo(w, h);
-            ctx.lineTo(0, h);
+            ctx.lineTo(plotX, h);
             ctx.closePath();
             var gradient = ctx.createLinearGradient(0, 0, 0, h);
             var baseColor = isPos ? rootItem.positiveColor : rootItem.negativeColor;

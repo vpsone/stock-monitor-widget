@@ -107,6 +107,10 @@
             <label>Hide decimals in stock price</label>
             <default>false</default>
         </entry>
+        <entry name="showChartAxis" type="Bool">
+            <label>Show a price scale on the left of the chart</label>
+            <default>false</default>
+        </entry>
 
         <!-- Portfolio Tracking -->
         <entry name="portfolioData" type="String">
